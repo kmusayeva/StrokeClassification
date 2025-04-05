@@ -3,8 +3,8 @@ title: "Build and deploy a stroke prediction model using R"
 author: "Khadija Musayeva"
 date: "`r Sys.Date()`"
 output:
-  pdf_document: default
-  html_document: default
+  html_document:
+    self_contained: false
 ---
 
 <style>
@@ -329,38 +329,6 @@ p2 <- ggplot(dat, aes(x=age, fill=stroke)) +  geom_density(alpha=0.4)+
 grid.arrange(p1, p2, ncol=2)
 
 ```
-
-
-The relationship between average glucose level and heart disease.
-
-```{r glucose-heart_disease-hist, fig.height=4, fig.width=10, warning=FALSE}
-
-p1 <- ggplot(dat, aes(x = heart_disease, y = avg_glucose_level, color=heart_disease)) + 
-      geom_boxplot(outlier.shape = NA) +
-      geom_jitter(width = 0.2, alpha = 0.6, size = 1.5)+
-      scale_fill_brewer(palette = "Set3") +
-      scale_color_brewer(palette = "Set2") +
-      labs(x = "Heart disease", y = "Average glucose level", color = "heart_disease") +
-      theme_minimal(base_size = 14) +
-      theme(legend.position = "none")  
-
-
-agl_means <- dat %>% group_by(heart_disease) %>% summarise(agl_mean = median(avg_glucose_level)) 
-
-p2 <- ggplot(dat, aes(x=avg_glucose_level, fill=heart_disease)) +  geom_density(alpha=0.4) +
-      geom_vline(data = agl_means, aes(xintercept=agl_mean, color=heart_disease), linetype="dashed")+
-      labs(x = "Average glucose level", y = "Density", color = "heart_disease") +
-      scale_fill_brewer(palette = "Set3") +
-      scale_color_brewer(palette = "Set2") +
-      theme_minimal(base_size = 14) 
-
-grid.arrange(p1, p2, ncol=2)
-
-
-```
-
-
-
 
 Next, we analyze pairwise relationships between these variables. **For stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases.** The association between the average glucose level and body mass index is higher than it is in the non-stroke case.
 
