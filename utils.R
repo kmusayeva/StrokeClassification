@@ -170,3 +170,31 @@ plot_roc <- function(df, title) {
     labs(title = title)
 
 }
+
+
+plot_wrong_predictions <- function(df, var, what_var) {
+  
+   tmp <- sym(var)
+  
+   ggplot(df, aes(x = !!tmp, fill = factor(stroke))) +
+    geom_density(alpha = 0.4) +
+    
+    # Rug plot for incorrect predictions
+    geom_rug(data = subset(df, outcome %in% c("False Positive", "False Negative")),
+             aes(color = outcome),
+             sides = "b", alpha = 0.7) +
+    
+    # Manual fill colors for stroke = 0 and 1
+    scale_fill_manual(values = c("0" = "#A6CEE3", "1" = "#33A02C"),
+                      labels = c("No Stroke", "Stroke"),
+                      name = "Stroke Status") +
+    
+    # Manual colors for rug (incorrect predictions)
+    scale_color_manual(values = c("False Positive" = "blue", "False Negative" = "red"),
+                       name = "Incorrect Prediction") +
+    
+    labs(x = what_var, y = "Density") +
+    theme_minimal(base_size = 14)
+  
+}
+

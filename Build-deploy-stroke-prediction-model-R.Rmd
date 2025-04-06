@@ -15,13 +15,13 @@ body {
 
 # About Data Analysis Report
 
-This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains analysis such as data exploration, data visualization, statistical/epidemiological analysis and building the prediction models. The final report was completed on `r date()`. 
+This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains data exploration, data visualization, statistical/epidemiological and predictive modeling analyses of stroke dataset. The final report was completed on `r date()`. 
 
 **Data Description:**
 
 According to the World Health Organization (WHO) stroke is the 2nd leading cause of death globally, responsible for approximately 11% of total deaths.
 
-This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
+This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, body mass index, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
 
 
 ## Data preprocessing and analysis
@@ -274,7 +274,9 @@ grid.arrange(p1, p2, ncol=2)
 
 
 ```
-The distribution of body mass index of stroke individuals is concentrated around the mean ~27. **For BMI variable there is much overlap between the stroke and non-stroke cases.**
+
+
+The distribution of body mass index is right skewed. For BMI variable there is much overlap between the stroke and non-stroke cases, but the one for stroke individuals is slightly shifted to the right.
 
 ```{r bmi-stroke-hist, fig.height=4, fig.width=10, warning=FALSE}
 
@@ -330,7 +332,7 @@ grid.arrange(p1, p2, ncol=2)
 
 ```
 
-Next, we analyze pairwise relationships between these variables. **For stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases.** The association between the average glucose level and body mass index is higher than it is in the non-stroke case.
+Next, we analyze pairwise relationships between these variables. **We see that for stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases. This is because the majority of strokes happens above the age of 70, where body mass index starts to decline.** The association between the average glucose level and body mass index is higher than it is in the non-stroke case.
 
 ```{r pairwise-plot, fig.height=5, fig.width=10, warning=FALSE}
 
@@ -408,7 +410,7 @@ grid.arrange(p1, p2, ncol=2)
 
 ```
 
-The following plot shows the age distribution across combinations of hypertension and heart diseases. For instance 1_1 indicates the individuals who had both hypertension and heart disease. We separate the boxplots by stroke condition.
+The following plot shows the age distribution across combinations of hypertension and heart diseases. For instance 1_1 indicates the individuals who had both hypertension and heart disease. 
 
 ```{r pairwise_age_heartd_hypert, fig.height=5, fig.width=15, warning=FALSE}
 
@@ -441,7 +443,7 @@ In this section, we will do some statistical analysis of association between var
 #### **Odds ratio**
 
 To compute the odds ratio we use **epitools package**. 
-The outcome of interest is stroke, and the exposures are: hypertension, heart disease, average glucose level, and age.
+The outcome of interest is stroke, and the exposures are: hypertension, heart disease, average glucose level, age and gender.
 
 The following odds ratio computation shows that the **odds of stroke in hypertensive individuals is ~3.7 times higher than that in non-hypertensive individuals**. 
 
@@ -453,8 +455,8 @@ oddsratio(tbl_hypertension)
 
 ```
 
-Also the **odds of stroke in individuals with heart disease is ~4.71 times higher than that in individuals with no heart disease.** 
 
+Also the **odds of stroke in individuals with heart disease is ~4.71 times higher than that in individuals with no heart disease.** 
 ```{r odds-ratio-heart-disease}
 
 tbl_heart_disease <- table(dat$stroke, dat$heart_disease)
@@ -464,17 +466,32 @@ oddsratio(tbl_heart_disease)
 ```
 
 
-To do odds ratio analysis with average glucose level, we bin it into two groups at the level of 150. **Individuals with average glucose level >150 have ~3.7 times higher odds of stroke than those with glucose ≤150.**
+To do odds ratio analysis with average glucose level, we bin it into two groups at the level of 180 mg/dL. **Individuals with average glucose level >180 have ~4 times higher odds of stroke than those with glucose ≤180.**
 
 ```{r odds-ratio-glucose}
 
-stroke_agl <- dat %>% mutate(agl_group = cut(avg_glucose_level, breaks = c(0, 150, max(dat$avg_glucose_level)))) %>% select(c(stroke, agl_group))
+stroke_agl <- dat %>% mutate(agl_group = cut(avg_glucose_level, breaks = c(0, 180, max(dat$avg_glucose_level)))) %>% select(c(stroke, agl_group))
 
 tbl_agl <- table(stroke_agl$stroke, stroke_agl$agl_group)
 
 oddsratio(tbl_agl)
 
 ```
+
+
+We also consider the odds ratio for body mass index, where we group the individuals into the normal weight, i.e., below 25 kg/m2, and overweight, i.e., above 25 kg/m2, categories. The result shows that **overweight individuals have ~2.24 times higher odds of stroke than those with normal weight.**
+
+```{r body-mass-index}
+dat_bmi <- dat[!is.na(dat$bmi),]
+
+dat_bmi_stroke <- dat_bmi %>% mutate(g = cut(bmi, breaks = c(0, 25, max(dat_bmi$bmi)))) %>% select(c(stroke, g))
+
+tbl_bmi <- table(dat_bmi_stroke$stroke, dat_bmi_stroke$g)
+
+oddsratio(tbl_bmi)
+
+```
+
 
 **Odds of stroke in individuals aged above 60 is ~8.13 times higher than that in indivduals aged less than 60.**
 Thus we see that **age is a very important risk factor**. This result is **statistically very significant, the confidence interval does not contain 1**, as the two result reported above.
@@ -557,44 +574,6 @@ cat("Population attributable risk percent due to hypertension is", par, "and pop
 
 ```
 
-#### **Pairwise association**
-
-In the pairwise association plot above we saw that **individuals with stroke tend to have lower body mass index, however with age, in general, people tend to have higher body mass index**. Let us look at this relationship more closely:
-
-```{r age_vs_bmi, fig.height=5, fig.width=15, message=FALSE, warning=FALSE}
-
-p1 <- ggplot(dat, aes(x = age, y = bmi)) +
-      geom_point(alpha = 0.3, aes(color="#E69F00")) +
-      geom_smooth(method = "lm", se = TRUE, color='#E69F00') +
-      scale_fill_brewer(palette = "Set3") +
-      scale_color_brewer(palette = "Set2") +
-      labs(color = "stroke", title = "Age vs bmi")+
-      theme(plot.title = element_text(hjust = 0.5, size = 16), legend.position="none")
-
-
-p2 <- ggplot(dat, aes(x = age, y = bmi, color = stroke, shape=stroke)) +
-      geom_point(alpha = 0.3) +
-      geom_smooth(method = "lm", se = TRUE) +
-      scale_fill_brewer(palette = "Set3") +
-      scale_color_brewer(palette = "Set2") +
-      labs(color = "stroke", title = "Age vs bmi by stroke status")+
-      theme(plot.title = element_text(hjust = 0.5, size = 16))
-
-
-grid.arrange(p1, p2, ncol=2)
-
-```
-
-Is the interaction of age and stroke is statistically significant for bmi?
-
-We see the **body mass index on average increases by 0.12 units with each additional year for non-stroke cases, but for stroke cases it decreases by 0.12 - 0.2756 = -0.1556 for each additional year. However, note that, age and stroke explains a very little variance in body mass index: around ~12 percent.**
-
-```{r}
-
-lm_mod <- lm(bmi ~ age * stroke, data = dat)
-summary(lm_mod)
-
-```
 
 #### **Odds of stroke after adjusting for all variables**
 
@@ -637,7 +616,7 @@ Finally, we consider **Matthews correlation coefficient. The value of this metri
 Now, since we are dealing with the class-imbalance problem, we can choose cut-off threshold values below the standard 0.5 level. This will output different values for sensitivity, specificity, F1-measure and Matthews coefficient. Our strategy is based on the Youden's index, i.e., the threshold that maximizes sensitivity + specificity - 1.
 
 
-### ** Missing values, data splitting**
+### **Missing values, data splitting**
 
 We  can impute the missing values using the k-nearest neighbour method. It means that the individuals having similar characteristics will have similar body mass index. But it is questionable from precision medicine point of view. We can as well remove these individuals from the data set on the basis of biological differences between individuals even with very similar characteristics. 
 
@@ -664,15 +643,15 @@ dat_cv <- vfold_cv(dat_train)
 
 We use logistic regression, also models of higher capacity, capable of learning non-linear decision boundaries, such as random forest and an improved version of the gradient boosting method, extreme gradient boosting. The latter models are particularly suitable for data with many categorical variables.
 
-We train logistic regression with and without SMOTE. The latter generates synthetic samples for the rare class based on the k-nearest neighbour method. The proportion of synthetic examples can be controlled thanks to the over_ratio option in the recipe function. The number of synthetic samples generated affect sensitivity and specificity: higher number of synthetic samples will improve sensitivity, and degrade specificity.
+We train logistic regression with and without SMOTE, and the remaining models with SMOTE. The latter generates synthetic samples for the rare class based on the k-nearest neighbour method. The proportion of synthetic examples can be controlled thanks to the over_ratio option in the recipe function. The number of synthetic samples generated affect sensitivity and specificity: higher number of synthetic samples will improve sensitivity, and degrade specificity.
 
-We use parsnip package of tidymodels to train logistic regression model and random forest. There is no implementation of xgb in tidymodels, so we use xgboost package. We do a grid search for hyperparameter tuning.
+We use parsnip package of tidymodels to train logistic regression model and random forest. There is no implementation of extreme gradient boosting, xgb, in tidymodels, so we use xgboost package. We do a grid search for hyperparameter tuning.
 
 #### **Logistic regression**
 
 ```{r}
 
-ground_truth <- factor(dat_test$stroke, levels = c(1, 0))
+ground_truth <- factor(dat_test$stroke, levels = c(1, 0)) # set the ground truth
 
 dat_recipe <- recipe(stroke ~ ., data = dat_train) %>% step_impute_knn(all_predictors())
 
@@ -690,7 +669,7 @@ lr_result1 <- evaluate_model_fit(ground_truth, lr_probs1$.pred_1)
 
 ```
 
-and with SMOTE:
+and train with SMOTE:
 
 ```{r}
 
@@ -850,7 +829,6 @@ From the confusion matrix, we see that a lot of individuals are predicted as the
 
 ```{r fig.height=5, fig.width=15, warning=FALSE}
 
-
 p1 <- plot_confusion_matrix(ground_truth, lr_result2$pred_class, round(lr_result2$matcc, 2), "Logistic regression")
 
 p2 <- plot_confusion_matrix(ground_truth, rf_result$pred_class, round(rf_result$matcc, 2), "Random forest")
@@ -863,9 +841,9 @@ grid.arrange(p1, p2, p3, ncol = 3)
 ```
 
 
-### **False positives and false negatives of logistic regression**
+### **Incorrect predictions of logistic regression**
 
-Now let us look at the distribution of incorrect predictions for logistic regression (trained with smote). We consider important variables such as age and average glucose level. Since age is a very important risk factor for stroke, as expected, there are many false positives for older age. There are many false postivies across all values of average glucose but they are mostly concetrated around its two modes.
+Now let us look at the distribution of incorrect predictions for logistic regression (trained with smote). We consider important variables such as age and average glucose level. Since the age is a very important risk factor for stroke, as expected, there are many false positives for older age. There are many false positivies across all values of average glucose but they are mostly concetrated around its two modes.
 
 ```{r incorrect-preds, fig.height=5, fig.width=15, warning=FALSE}
 
@@ -881,49 +859,27 @@ dat_test_preds$outcome <- with(dat_test_preds, ifelse(
   ifelse(stroke == 0 & preds == 1, "False Positive", "False Negative"))))
 
 
-p1 <- ggplot(dat_test_preds, aes(x = avg_glucose_level, fill = factor(stroke))) +
-  geom_density(alpha = 0.4) +
-  
-  # Rug plot for incorrect predictions
-  geom_rug(data = subset(dat_test_preds, outcome %in% c("False Positive", "False Negative")),
-           aes(color = outcome),
-           sides = "b", alpha = 0.7) +
-  
-  # Manual fill colors for stroke = 0 and 1
-  scale_fill_manual(values = c("0" = "#A6CEE3", "1" = "#33A02C"),
-                    labels = c("No Stroke", "Stroke"),
-                    name = "Stroke Status") +
-  
-  # Manual colors for rug (incorrect predictions)
-  scale_color_manual(values = c("False Positive" = "blue", "False Negative" = "red"),
-                     name = "Incorrect Prediction") +
+p1 <- plot_wrong_predictions(dat_test_preds, "age", "Age")
 
-  labs(x = "Average glucose level", y = "Density") +
-  theme_minimal(base_size = 14)
+p2 <- plot_wrong_predictions(dat_test_preds, "avg_glucose_level", "Average glucose level")
 
-
-
-p2 <- ggplot(dat_test_preds, aes(x = age, fill = factor(stroke))) +
-  geom_density(alpha = 0.4) +
-  
-  # Rug plot for incorrect predictions
-  geom_rug(data = subset(dat_test_preds, outcome %in% c("False Positive", "False Negative")),
-           aes(color = outcome),
-           sides = "b", alpha = 0.7) +
-  
-  # Manual fill colors for stroke = 0 and 1
-  scale_fill_manual(values = c("0" = "#A6CEE3", "1" = "#33A02C"),
-                    labels = c("No Stroke", "Stroke"),
-                    name = "Stroke Status") +
-  
-  # Manual colors for rug (incorrect predictions)
-  scale_color_manual(values = c("False Positive" = "blue", "False Negative" = "red"),
-                     name = "Incorrect Prediction") +
-
-  labs(x = "Age", y = "Density") +
-  theme_minimal(base_size = 14)
 
 grid.arrange(p1, p2, ncol=2)
+
+```
+
+**Positive predictive value and negative predictive value of logistic regression**
+
+The positive predictive value (PPV) is the probability that an individual predicted to have a stroke truly has a stroke, while the negative predictive value (NPV) is the probability that an individual predicted not to have a stroke truly does not have a stroke. Considering our logistic regression model as a diagnostic tool, the probability that an individual predicted to have a stroke has a stroke is 16% and the probability that an individual predicted not to have a stroke does not have a stroke is 98%.
+
+```{r}
+
+cm <- confusionMatrix(lr_result2$pred_class, ground_truth, positive = "1")
+metrics <- cm$byClass
+ppv <- metrics[3]
+npv <- metrics[4]
+
+cat("Positive predicted value is", round(ppv,2), "and negative predicted value is", round(npv, 2))
 
 ```
 
@@ -931,7 +887,7 @@ grid.arrange(p1, p2, ncol=2)
 
 # Task Four: Deploy the prediction model
 
-For deployment, we train logistic regression on the entire dataset, where we impute the missing values of BMI and generate synthetic examples of the rare class.
+For deployment, we train logistic regression on the entire dataset, where we impute the missing values of BMI and generate synthetic examples of the rare class. We save the trained model, and use it in shiny interface for which we have created in a separate file.
 
 ```{r}
 
@@ -957,13 +913,13 @@ saveRDS(final_fit, file = "stroke_model.rds")
 
 # Task Five: Findings and Conclusions
 
-The prevalence of stroke cases is approximately 5%, making this a highly imbalanced dataset from a classification perspective. Data visualization revealed considerable overlap between the class-conditional distributions of key variables such as body mass index, average glucose level, heart disease, and age. This indicates that no single covariate is clearly discriminative for stroke classification.
+The prevalence of stroke cases is ~5%, making this a highly imbalanced dataset from a classification perspective. Data visualization revealed considerable overlap between the class-conditional distributions of important variables such as body mass index, average glucose level, heart disease, and age. This indicates that no single covariate is clearly discriminative for stroke classification. From precision medicine point of view, incorporating family history, ethnic origin, lifestyle, other environmental factors such as geographic location, and genomic information might improve the classification of stroke cases.
 
-Statistical analysis confirmed that age is a particularly important risk factor: the majority of stroke cases occur above the age of ~60. Other significant predictors include hypertension and average glucose level. In contrast, gender does not appear to play a substantial role, with stroke occurring at similar rates across male and female individuals.
+Statistical analysis showed that age is a particularly important risk factor: the majority of stroke cases occur above the age of ~60. Other important predictors are hypertension and average glucose level. In contrast, stroke occurrs at similar rates across male and female individuals.
 
-To address class imbalance problem, we applied SMOTE to synthetically generate examples of the stroke class and we used a lower-than-standard probability threshold (less than 0.5) to classify strokes. These manipulations increase model sensitivity at the cost of more false positives.  We used a parametric method such as logistic regression, and tree-based models capable of learning highly non-linear decision boundaries and well adapted to data with many categorical variable: random forest and gradient boosting. All models are comparable regarding their predictive performance: they are better than a random guess according to Matthews correlation coefficient which is computed based on the whole confusion matrix. However logistic regression stood out with respect to AUC, F1 measures, Matthews correlation coefficient and specificity.
+To address the class imbalance problem, we applied SMOTE to synthetically generate examples of the stroke class and we used a lower-than-standard probability threshold (less than 0.5) to classify strokes. These manipulations increase model sensitivity at the cost of more false positives.  We used a parametric method such as logistic regression, and tree-based models capable of learning highly non-linear decision boundaries and well adapted to data with many categorical variable: random forest and gradient boosting. All models are comparable regarding their predictive performance: they are better than a random guess according to Matthews correlation coefficient which is computed based on the whole confusion matrix. However logistic regression stood out with respect to AUC, F1 measures, Matthews correlation coefficient and specificity.
 
-There is a clear trade-off between sensitivity and specificity: improving sensitivity inevitably results in more false positives and some false negatives. For example, adjusting the classification threshold alters the balance between these metrics. This is an important  epidemiological question: what are the consequences of generating many false positives in order to detect a rare but serious condition like stroke?
+There is a clear trade-off between sensitivity and specificity: improving sensitivity results in more false positives and some false negatives. For example, adjusting the classification threshold alters the balance between these metrics. This is an important  epidemiological question: what are the consequences of generating many false positives in order to detect a rare but serious condition like stroke?
 
 
 
