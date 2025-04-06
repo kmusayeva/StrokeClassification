@@ -3,6 +3,7 @@ title: "Build and deploy a stroke prediction model using R"
 author: "Khadija Musayeva"
 date: "`r Sys.Date()`"
 output:
+  pdf_document: default
   html_document:
     self_contained: false
 ---
@@ -813,7 +814,7 @@ ggplot(results_long, aes(x = Metric, y = Value, fill = Model)) +
 ```
 
 
-```{r fig.height=7, fig.width=20, warning=FALSE}
+```{r fig.height=7, fig.width=25, warning=FALSE}
 
 p1 <- plot_roc(data.frame(ground_truth, probs=lr_probs2$.pred_1), "Logistic Regression")
 
