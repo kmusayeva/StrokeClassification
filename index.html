@@ -11,7 +11,7 @@
 
 <meta name="author" content="Khadija Musayeva" />
 
-<meta name="date" content="2025-04-06" />
+<meta name="date" content="2025-04-08" />
 
 <title>Build and deploy a stroke prediction model using R</title>
 
@@ -165,7 +165,7 @@ pre code {
 <h1 class="title toc-ignore">Build and deploy a stroke prediction model
 using R</h1>
 <h4 class="author">Khadija Musayeva</h4>
-<h4 class="date">2025-04-06</h4>
+<h4 class="date">2025-04-08</h4>
 
 </div>
 
@@ -181,7 +181,7 @@ body {
 the project on building and deploying a stroke prediction model in R. It
 contains data exploration, data visualization,
 statistical/epidemiological and predictive modeling analyses of stroke
-dataset. The final report was completed on Sun Apr 6 18:58:59 2025.</p>
+dataset. The final report was completed on Tue Apr 8 14:04:49 2025.</p>
 <p><strong>Data Description:</strong></p>
 <p>According to the World Health Organization (WHO) stroke is the 2nd
 leading cause of death globally, responsible for approximately 11% of
@@ -256,9 +256,9 @@ dat$bmi &lt;- as.numeric(dat$bmi)</code></pre>
 </div>
 <div id="analysis-of-missing-values" class="section level3">
 <h3><strong>Analysis of missing values</strong></h3>
-<p>To analyze the missing values we use naniar package. The following
-plot shows that 4 percent of bmi values, or 201 of observations have bmi
-values missing.</p>
+<p>To analyze the missing values we use the naniar package.</p>
+<p>The following plot shows that 4 percent of bmi values, or 201 of
+observations have bmi values missing.</p>
 <pre class="r"><code>vis_miss(dat)</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/miss-plot-1.png" width="672" /></p>
 <p>Are these missing values distributed randomly? To this end, we look
@@ -277,148 +277,43 @@ grid.arrange(p1, p2, ncol = 2)</code></pre>
 </div>
 <div id="visualization" class="section level3">
 <h3><strong>Visualization</strong></h3>
-<p>The following plots show the distribution of categorical
+<p>The following plot illustrates the distribution of categorical
 variables.</p>
-<pre class="r"><code># Select categorical variables and stroke column
-cat_vars &lt;- dat[, -c(2, 8, 9)]
-stroke &lt;- dat$stroke
-
-# convert into long format
-long_dat &lt;- cat_vars %&gt;% pivot_longer(cols = everything(), names_to = &quot;variable&quot;, values_to = &quot;value&quot;)
-
-# change the order of categorical variables for plot
-long_dat$variable &lt;- factor(long_dat$variable, levels = c(&quot;stroke&quot;, &quot;gender&quot;, &quot;hypertension&quot;,  &quot;heart_disease&quot;, &quot;smoking_status&quot;, &quot;ever_married&quot;, &quot;work_type&quot;, &quot;Residence_type&quot;)) 
-
-# bar plot of percentages
-ggplot(long_dat, aes(x = value, y = after_stat(prop), fill=variable)) +
-  geom_bar(position = position_dodge(), stat = &quot;prop&quot;)+
-  geom_text(aes(label = round(100 * after_stat(prop), 2)),
-    position = position_dodge(.9), stat = &quot;prop&quot;, vjust = -.2
-  ) + 
-  facet_wrap(~ variable, nrow = 2, ncol = 4, scales = &quot;free_x&quot;) +
-  scale_fill_brewer(palette = &quot;Set2&quot;) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 16),
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    strip.text = element_text(size = 12),
-    panel.spacing = unit(1.2, &quot;lines&quot;),
-    legend.position=&quot;none&quot;
-  ) +
-  labs(
-    x = &quot;&quot;,
-    y = &quot;Proportion of observations&quot;,
-    title = &quot;&quot;
-  )</code></pre>
-<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/cat-plot-1.png" width="864" /></p>
 <p>We see that in this study there are more females than males, more
-individuals with positive ever-married status, more individuals working
-in the private sector than the remaining sectors. There are almost the
-same number of observations in rural and urban categories. Below we look
-at the prevalence of stroke cases across all categorical variables.</p>
-<pre class="r"><code>cat_vars &lt;- dat[, -c(2, 8, 9, 11)]  # remove continuous vars or unwanted cols
-cat_vars$stroke &lt;- dat$stroke  # keep stroke indicator
-
-# convert to long format
-long_dat &lt;- cat_vars %&gt;%
-  pivot_longer(cols = -stroke, names_to = &quot;variable&quot;, values_to = &quot;value&quot;)
-
-# stroke prevalence per category
-stroke_pct &lt;- long_dat %&gt;%
-  group_by(variable, value) %&gt;%
-  summarise(
-    total = n(),
-    stroke_cases = sum(stroke == 1),
-    pct = round(100 * stroke_cases / total, 2),
-    .groups = &quot;drop&quot;
-  )
-
-# set the plot order
-stroke_pct$variable &lt;- factor(stroke_pct$variable,
-                              levels = c(&quot;gender&quot;, &quot;hypertension&quot;, &quot;heart_disease&quot;,
-                                         &quot;smoking_status&quot;, &quot;ever_married&quot;,
-                                         &quot;work_type&quot;, &quot;Residence_type&quot;))
-
-
-ggplot(stroke_pct, aes(x = value, y = pct, fill = variable)) +
-  geom_bar(stat = &quot;identity&quot;) +
-  facet_wrap(~variable, nrow = 2, ncol = 4, scales = &quot;free_x&quot;) +
-  scale_fill_brewer(palette = &quot;Set2&quot;) +
-  theme_minimal(base_size = 14) +
-  theme(plot.title = element_text(hjust = 0.5, size = 16),
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        panel.spacing = unit(1.2, &quot;lines&quot;),
-        legend.position = &quot;none&quot;) +
-  labs(x = &quot;&quot;, y = &quot;Stroke rate (%)&quot;, title = &quot;&quot;)</code></pre>
-<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/stroke-plot-1.png" width="864" /></p>
+ever-married individuals, more individuals working in the private sector
+than the remaining ones. There are almost the same number of
+observations in rural and urban categories.</p>
+<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/cat-plot-1.png" width="864" /></p>
+<p><strong>The prevalence of stroke cases across all categorical
+variables.</strong></p>
 <p>We see that both females and males are equally affected by this
 medical condition. There are more stroke cases among individuals with
 hypertension, and heart disease. More formerly-smoked individuals have
 stroke than the rest, however, there are a lot of individuals with the
-unknown smoking status, which makes this analysis biased. In general
-these variables are related to the age. For instance, more
-formerly-smoked individuals, or ever-married individuals are older
-people.</p>
+unknown smoking status, which makes this analysis biased. Age may be a
+confounding variable here. For instance, the majority of formerly-smoked
+individuals, or ever-married individuals are relatively older
+individuals (above the age of 40).</p>
+<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/stroke-plot-1.png" width="864" /></p>
 <p>We use <strong>Cramer’s V</strong> to measure associations between
 multiple categories. It ranges from 0 (no association) to 1 (perfect
 association). The following heatmap shows that there is some association
 between smoking status and marriage status, smoking status and work
 type. This is likely due to the age of individuals as a confounding
 variable. Most of the associations, however, are weak.</p>
-<pre class="r"><code>cat_vars &lt;- dat[, -c(2, 8, 9, 11)] %&gt;%
-  mutate(across(everything(), ~ droplevels(as.factor(.))))
-
-cramerV_matrix &lt;- compute_cramer_v_matrix(cat_vars)
-
-cramerV_tidy &lt;- melt(cramerV_matrix, na.rm = TRUE)
-
-cramerV_tidy$Var1 &lt;- factor(cramerV_tidy$Var1, levels = rownames(cramerV_matrix))
-
-cramerV_tidy$Var2 &lt;- factor(cramerV_tidy$Var2, levels = colnames(cramerV_matrix))
-
-
-ggplot(cramerV_tidy, aes(Var1, Var2, fill = value)) +
-  geom_tile(color = &quot;white&quot;) +
-  scale_fill_gradient2(
-    low = &quot;white&quot;, mid = &quot;lightblue&quot;, high = &quot;steelblue&quot;,
-    midpoint = 0.2, limits = c(0, 1), name = &quot;Cramér’s V&quot;
-  ) +
-  geom_text(aes(label = round(value, 2)), color = &quot;black&quot;, size = 3) +
-  theme_minimal(base_size = 14) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    panel.grid = element_blank()
-  ) +
-  labs(title = &quot;&quot;, x = &quot;&quot;, y = &quot;&quot; )</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>What about continuous variables: age, average glucose level, and body
 mass index?</p>
-<p>The majority of individuals have an average glucose level below 150,
-but there is a small group of individuals whose average glucose level is
-concentrated around ~210.</p>
-<pre class="r"><code>p1 &lt;- ggplot(dat, aes(x=avg_glucose_level)) +  
-      geom_histogram(fill=&quot;#92C5DE&quot;)+
-      labs(x = &quot;Average glucose level&quot;, y = &quot;&quot;) +
-      theme_minimal(base_size = 12)+
-      theme(legend.position=&quot;none&quot;)
-
-
-p2 &lt;- ggplot(dat, aes(x=bmi)) +  
-      geom_histogram(fill=&quot;#E69F00&quot;)+
-      labs(x = &quot;Body mass index&quot;, y = &quot;&quot;) +
-      theme_minimal(base_size = 12)+
-      theme(legend.position=&quot;none&quot;)
-
-
-p3 &lt;- ggplot(dat, aes(x=age)) +  
-      geom_histogram(fill=&quot;#D6604D&quot;)+
-      labs(x = &quot;Age&quot;, y = &quot;&quot;) +
-      theme_minimal(base_size = 12)+
-      theme(legend.position=&quot;none&quot;)
-
-
-grid.arrange(p1, p2, p3, ncol=3)</code></pre>
-<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/hist-plots-1.png" width="864" /></p>
+<p>Half of the individuals have an average glucose level above the
+normal 100 mg/dL threshold, indicating a substantial proportion may be
+experiencing hyperglycemia. In particular, there is a cluster of
+individuals whose glucose levels are concentrated around ~210 mg/dL.
+Body mass index distribution is right skewed with more than half of the
+individuals having a body mass index (BMI) above the normal upper limit
+of 24.9 kg/m^2, i.e., half of the individuals are overweight or obese.
+The distribution of age is almost uniform, it includes all ages from
+infants to elderly.</p>
+<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/hist-plots-1.png" width="960" /></p>
 <p>The distribution of average glucose level among individuals who
 experienced a stroke is visibly multimodal, with a secondary peak above
 200. The median average glucose level among stroke cases is around 105.
@@ -450,9 +345,9 @@ p2 &lt;- ggplot(dat, aes(x=avg_glucose_level, fill=stroke)) +  geom_density(alph
 
 grid.arrange(p1, p2, ncol=2)</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/glucose-stroke-hist-1.png" width="864" /></p>
-<p>The distribution of body mass index is right skewed. For BMI variable
-there is much overlap between the stroke and non-stroke cases, but the
-one for stroke individuals is slightly shifted to the right.</p>
+<p>For BMI variable there is much overlap between the stroke and
+non-stroke cases, but the one for stroke individuals is slightly shifted
+to the right.</p>
 <pre class="r"><code>p1 &lt;- ggplot(dat, aes(x = stroke, y = bmi, color=stroke)) + 
       geom_boxplot(outlier.shape = NA) +
       geom_jitter(width = 0.2, alpha = 0.6, size = 1.5)+
@@ -673,9 +568,9 @@ oddsratio(tbl_heart_disease)</code></pre>
 ## attr(,&quot;method&quot;)
 ## [1] &quot;median-unbiased estimate &amp; mid-p exact CI&quot;</code></pre>
 <p>To do odds ratio analysis with average glucose level, we bin it into
-two groups at the level of 180 mg/dL. <strong>Individuals with average
-glucose level &gt;180 have ~4 times higher odds of stroke than those
-with glucose ≤180.</strong></p>
+two groups at the level of 180 mg/dL. <strong>Individuals with the
+average glucose level &gt;180 have ~4 times higher odds of stroke than
+those with the average glucose level ≤180.</strong></p>
 <pre class="r"><code>stroke_agl &lt;- dat %&gt;% mutate(agl_group = cut(avg_glucose_level, breaks = c(0, 180, max(dat$avg_glucose_level)))) %&gt;% select(c(stroke, agl_group))
 
 tbl_agl &lt;- table(stroke_agl$stroke, stroke_agl$agl_group)
@@ -746,8 +641,7 @@ higher than that in indivduals aged less than 60.</strong> Thus we see
 that <strong>age is a very important risk factor</strong>. This result
 is <strong>statistically very significant, the confidence interval does
 not contain 1</strong>, as the two result reported above.</p>
-<pre class="r"><code>stroke_age &lt;- dat %&gt;% mutate(age_group = cut(age, breaks = c(0, 60, max(dat$age)), labels=c(&quot;0&quot;, &quot;1&quot;))) %&gt;% select(c(stroke, age_group))
-
+<pre class="r"><code>stroke_age &lt;- dat %&gt;% mutate(age_group = cut(age, breaks = c(0, 60, max(dat$age)), labels=c(&quot;0&quot;, &quot;1&quot;))) 
 tbl_age &lt;- table(stroke_age$stroke, stroke_age$age_group)
 
 oddsratio(tbl_age)</code></pre>
@@ -775,6 +669,69 @@ oddsratio(tbl_age)</code></pre>
 ## 
 ## attr(,&quot;method&quot;)
 ## [1] &quot;median-unbiased estimate &amp; mid-p exact CI&quot;</code></pre>
+<p>Is age a confounding factor in the association between heart disease
+and stroke? To answer this question we use logistic regression model
+where we adjust for age:</p>
+<pre class="r"><code>lr_model &lt;- glm(stroke ~ heart_disease + age, data=dat, family = &quot;binomial&quot;)
+
+summary(lr_model)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = stroke ~ heart_disease + age, family = &quot;binomial&quot;, 
+##     data = dat)
+## 
+## Coefficients:
+##                 Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)    -7.143430   0.335705 -21.279   &lt;2e-16 ***
+## heart_disease1  0.423317   0.185405   2.283   0.0224 *  
+## age             0.072429   0.005016  14.440   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1990.4  on 5109  degrees of freedom
+## Residual deviance: 1611.3  on 5107  degrees of freedom
+## AIC: 1617.3
+## 
+## Number of Fisher Scoring iterations: 7</code></pre>
+<pre class="r"><code>exp(lr_model$coefficients)</code></pre>
+<pre><code>##    (Intercept) heart_disease1            age 
+##   0.0007900377   1.5270177901   1.0751169789</code></pre>
+<p>After adjusting for age, the odds ratio for stroke in individuals
+with heart disease decreased from 4.71 to 1.53, indicating substantial
+confounding by age. This suggests that age is a confounding factor in
+the association between heart disease and stroke.</p>
+<p>The same analysis holds for hypertension. After adjusting for age,
+the odds ratio for stroke in individuals with hypertension decreased
+from 3.7 to 1.6. This suggests that age is a confounding factor in the
+association between hypertension and stroke.</p>
+<pre class="r"><code>lr_model &lt;- glm(stroke ~ hypertension + age, data=dat, family = &quot;binomial&quot;)
+
+summary(lr_model)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = stroke ~ hypertension + age, family = &quot;binomial&quot;, 
+##     data = dat)
+## 
+## Coefficients:
+##                Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)   -7.186714   0.335748 -21.405  &lt; 2e-16 ***
+## hypertension1  0.467334   0.160231   2.917  0.00354 ** 
+## age            0.072519   0.004994  14.522  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1990.4  on 5109  degrees of freedom
+## Residual deviance: 1608.2  on 5107  degrees of freedom
+## AIC: 1614.2
+## 
+## Number of Fisher Scoring iterations: 7</code></pre>
+<pre class="r"><code>exp(lr_model$coefficients)</code></pre>
+<pre><code>##   (Intercept) hypertension1           age 
+##  0.0007565708  1.5957347018  1.0752134553</code></pre>
 <p>Now, how about the gender? <strong>There is no association between
 gender and the occurrence of stroke.</strong></p>
 <pre class="r"><code>tbl_gender &lt;- table(dat$stroke, dat$gender)
@@ -859,22 +816,20 @@ par2 &lt;- round(((total_stroke/n)-(stroke_no_heart_disease/no_heart_disease))*1
 cat(&quot;Population attributable risk percent due to hypertension is&quot;, par, &quot;and population attributable risk percent due to heart disease is&quot;, par2, &quot;.&quot;)</code></pre>
 <pre><code>## Population attributable risk percent due to hypertension is 19 and population attributable risk percent due to heart disease is 14 .</code></pre>
 </div>
-<div id="odds-of-stroke-after-adjusting-for-all-variables"
-class="section level4">
-<h4><strong>Odds of stroke after adjusting for all
-variables</strong></h4>
+<div id="adjusted-odds-ratio" class="section level4">
+<h4><strong>Adjusted Odds Ratio</strong></h4>
 <p>Logistic regression models the log odds of stroke as a linear
 combination of variables. It allows us to see the effect of each
 covariate on the odds of stroke while adjusting for all the other
 covariates. The result below shows that the age, average glucose level,
 and hypertension are significant covariates for stroke, but heart
-disease is not, after adjusting for other variables. In other words,
-<strong>older individuals, individuals with hypertension, and
-individuals with higher glucose levels are at increased risk of
-stroke.</strong></p>
-<pre class="r"><code>lg_model &lt;- glm(stroke ~ age + gender + hypertension + heart_disease + ever_married + work_type + Residence_type + avg_glucose_level  + smoking_status, data = dat, family = &quot;binomial&quot;)
+disease is not (because the age is the confounding factor), after
+adjusting for other variables. In other words, <strong>older
+individuals, individuals with hypertension, and individuals with higher
+glucose levels are at increased risk of stroke.</strong></p>
+<pre class="r"><code>lr_model &lt;- glm(stroke ~ age + gender + hypertension + heart_disease + ever_married + work_type + Residence_type + avg_glucose_level  + smoking_status, data = dat, family = &quot;binomial&quot;)
 
-summary(lg_model)</code></pre>
+summary(lr_model)</code></pre>
 <pre><code>## 
 ## Call:
 ## glm(formula = stroke ~ age + gender + hypertension + heart_disease + 
@@ -916,7 +871,7 @@ the odds of stroke. Each additional average glucose level is associated
 with the ~0.4% increase in the odds of stroke. People with hypertension
 have ~1.5 times the odds of stroke compared to those without
 hypertension.</strong></p>
-<pre class="r"><code>coeffs &lt;- lg_model$coefficients
+<pre class="r"><code>coeffs &lt;- lr_model$coefficients
 
 coeffs_sign &lt;- coeffs[names(coeffs) %in% c(&quot;age&quot;, &quot;hypertension1&quot;, &quot;avg_glucose_level&quot;)]
 
@@ -1129,13 +1084,11 @@ xgb_final_model &lt;- xgb.train(
   watchlist = list(train = dtrain),
   verbose = 0
   )</code></pre>
-<pre><code>## [19:09:15] WARNING: src/learner.cc:767: 
+<pre><code>## [14:08:11] WARNING: src/learner.cc:767: 
 ## Parameters: { &quot;auc&quot;, &quot;best_iteration&quot; } are not used.</code></pre>
 <pre class="r"><code>xgb_probs &lt;- predict(xgb_final_model, dtest)
 
 xgb_result &lt;- evaluate_model_fit(ground_truth, xgb_probs)</code></pre>
-<pre><code>## Setting levels: control = 1, case = 0</code></pre>
-<pre><code>## Setting direction: controls &gt; cases</code></pre>
 </div>
 </div>
 <div id="performance-comparison-of-models" class="section level3">
@@ -1177,7 +1130,7 @@ p2 &lt;-  plot_roc(data.frame(ground_truth, probs=rf_probs), &quot;Random Forest
 p3 &lt;-  plot_roc(data.frame(ground_truth, probs=xgb_probs), &quot;XGB&quot;)
 
 grid.arrange(p1, p2, p3, ncol = 4)</code></pre>
-<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/unnamed-chunk-15-1.png" width="1920" /></p>
+<p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/unnamed-chunk-15-1.png" width="2400" /></p>
 <p>From the confusion matrix, we see that a lot of individuals are
 predicted as the stroke case, since we chose lower cut-off threshold
 from the ROC curve. Logistic regression has smaller number of false
@@ -1195,13 +1148,15 @@ grid.arrange(p1, p2, p3, ncol = 3)</code></pre>
 <div id="incorrect-predictions-of-logistic-regression"
 class="section level3">
 <h3><strong>Incorrect predictions of logistic regression</strong></h3>
-<p>Now let us look at the distribution of incorrect predictions for
-logistic regression (trained with smote). We consider important
-variables such as age and average glucose level. Since the age is a very
-important risk factor for stroke, as expected, there are many false
-positives for older age. There are many false positivies across all
-values of average glucose but they are mostly concetrated around its two
-modes.</p>
+<p>Now let us look at the distribution of incorrect predictions, in
+particular false positives, for logistic regression (trained with
+smote). We consider important predictors of stroke such as age and
+average glucose level. Since the age is a very important risk factor for
+stroke, as expected, there are many false positives for older age. There
+are many false positives across all values of average glucose: this is
+expected since the class conditional distributions, i.e., the
+distributions of average glucose level conditioned on stroke variable,
+overlap. But they are mostly concentrated around its two modes.</p>
 <pre class="r"><code>preds &lt;- lr_result2$pred_class
 
 dat_test_preds &lt;- dat_test
@@ -1242,10 +1197,9 @@ cat(&quot;Positive predicted value is&quot;, round(ppv,2), &quot;and negative pr
 </div>
 <div id="task-four-deploy-the-prediction-model" class="section level1">
 <h1>Task Four: Deploy the prediction model</h1>
-<p>For deployment, we train logistic regression on the entire dataset,
-where we impute the missing values of BMI and generate synthetic
-examples of the rare class. We save the trained model, and use it in
-shiny interface for which we have created in a separate file.</p>
+<p>We train logistic regression model on the entire dataset, where we
+impute the missing values of BMI and generate synthetic examples of the
+rare class. We save the trained model.</p>
 <pre class="r"><code>final_data &lt;- dat
 
 final_recipe &lt;- recipe(stroke ~ ., data = final_data) %&gt;%
@@ -1262,6 +1216,8 @@ final_workflow &lt;- workflow() %&gt;%
 final_fit &lt;- fit(final_workflow, data = final_data)
 
 saveRDS(final_fit, file = &quot;stroke_model.rds&quot;)</code></pre>
+<p>Use this model to predict stroke probability in shiny interface:</p>
+<p><img src="shiny.png" width="60%" /></p>
 </div>
 <div id="task-five-findings-and-conclusions" class="section level1">
 <h1>Task Five: Findings and Conclusions</h1>
@@ -1272,27 +1228,30 @@ distributions of important variables such as body mass index, average
 glucose level, heart disease, and age. This indicates that no single
 covariate is clearly discriminative for stroke classification. From
 precision medicine point of view, incorporating family history, ethnic
-origin, lifestyle, other environmental factors such as geographic
-location, and genomic information might improve the classification of
-stroke cases.</p>
+origin, other environmental factors such as geographic location,
+socioeconomic status, as well as genomic profile of individuals would
+improve the classification of stroke cases. Importantly, since this is a
+cross-sectional data, although obese individuals with heart condition is
+a non-stroke case in the dataset, they are at higher risk of stroke as
+they age.</p>
 <p>Statistical analysis showed that age is a particularly important risk
 factor: the majority of stroke cases occur above the age of ~60. Other
 important predictors are hypertension and average glucose level. In
-contrast, stroke occurrs at similar rates across male and female
+contrast, stroke occurs at similar rates across male and female
 individuals.</p>
 <p>To address the class imbalance problem, we applied SMOTE to
 synthetically generate examples of the stroke class and we used a
-lower-than-standard probability threshold (less than 0.5) to classify
-strokes. These manipulations increase model sensitivity at the cost of
-more false positives. We used a parametric method such as logistic
-regression, and tree-based models capable of learning highly non-linear
-decision boundaries and well adapted to data with many categorical
-variable: random forest and gradient boosting. All models are comparable
-regarding their predictive performance: they are better than a random
-guess according to Matthews correlation coefficient which is computed
-based on the whole confusion matrix. However logistic regression stood
-out with respect to AUC, F1 measures, Matthews correlation coefficient
-and specificity.</p>
+lower-than-standard probability threshold (less than 0.5) based in
+Youden’s index to classify strokes. These manipulations increase model
+sensitivity at the cost of increased number of false positives. We used
+a parametric method such as logistic regression, and tree-based models
+capable of learning highly non-linear decision boundaries and well
+adapted to data with many categorical variables: random forest and
+gradient boosting. All models are comparable regarding their predictive
+performance: they are better than a random guess according to Matthews
+correlation coefficient which is computed based on the whole confusion
+matrix. However logistic regression stood out with respect to AUC, F1
+measures, Matthews correlation coefficient and specificity.</p>
 <p>There is a clear trade-off between sensitivity and specificity:
 improving sensitivity results in more false positives and some false
 negatives. For example, adjusting the classification threshold alters

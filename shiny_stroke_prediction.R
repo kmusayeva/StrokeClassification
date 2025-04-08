@@ -48,7 +48,7 @@ server <- function(input, output) {
     prediction <- predict(model, new_data, type = "prob")
     
     output$result <- renderPrint({
-      paste0("Predicted Stroke Probability: ", round(prediction$.pred_1, 3))
+      cat(paste0("Predicted Stroke Probability: ", round(prediction$.pred_1, 3)))
     })
   })
 }
