@@ -156,16 +156,16 @@ plot_roc <- function(df, title) {
   roc_curve(df, ground_truth, probs) %>%
     ggplot(aes(x = 1 - specificity, y = sensitivity)) +
     geom_path() +
-    geom_abline(lty = 3) +
+    geom_abline(lty = 4) +
     coord_equal() +
     theme_minimal()+
     theme(
       plot.title = element_text(hjust = 0.5, size = 18), 
       panel.spacing = unit(1.2, "lines"),
-      axis.text.x = element_text(size = 16),
-      axis.text.y = element_text(size = 16),
-      axis.title.x = element_text(size = 16),
-      axis.title.y = element_text(size=16)
+      axis.text.x = element_text(size = 18),
+      axis.text.y = element_text(size = 18),
+      axis.title.x = element_text(size = 18),
+      axis.title.y = element_text(size=18)
       ) +
     labs(title = title)
 

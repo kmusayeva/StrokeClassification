@@ -32,7 +32,7 @@ This data set is used to predict whether a patient is likely to get stroke based
 ```{r message=FALSE, warning=FALSE}
 ### we use pacman to install and load the required packages
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load("caret", "data.table", "DescTools", "epitools", "GGally", "ggplot2", "gridExtra", "mlbench", "mltools", "naniar", "parsnip", "pROC", "ranger", "reshape2", "recipes", "rsample", "shiny", "smotefamily", "themis","tidymodels", "tune", "viridis", "workflows", "yardstick", "xgboost")
+pacman::p_load("caret", "data.table", "DescTools", "egg", "epitools", "GGally", "ggplot2", "gridExtra", "mlbench", "mltools", "naniar", "parsnip", "pROC", "ranger", "reshape2", "recipes", "rsample", "shiny", "smotefamily", "themis","tidymodels", "tune", "viridis", "workflows", "yardstick", "xgboost")
 
 source("utils.R")
 
@@ -246,8 +246,7 @@ p1_box <- ggplot(dat, aes(x = avg_glucose_level, y = 1)) +
         panel.grid.minor.y = element_blank())
 
 # Combine the histogram and boxplot vertically.
-p1_combined <- arrangeGrob(p1_hist, p1_box, ncol = 1, heights = c(3, 1))
-
+p1_combined <- egg::ggarrange(p1_hist, p1_box, heights = 2:1, draw=FALSE)
 
 # Histogram for bmi
 p2_hist <- ggplot(dat, aes(x = bmi)) +
@@ -268,7 +267,7 @@ p2_box <- ggplot(dat, aes(x = bmi, y = 1)) +
         panel.grid.minor.y = element_blank())
 
 # Combine vertically
-p2_combined <- arrangeGrob(p2_hist, p2_box, ncol = 1, heights = c(3, 1))
+p2_combined <- egg::ggarrange(p2_hist, p2_box, heights = 2:1, draw=FALSE)
 
 # Histogram for age
 p3_hist <- ggplot(dat, aes(x = age)) +
@@ -289,8 +288,7 @@ p3_box <- ggplot(dat, aes(x = age, y = 1)) +
         panel.grid.minor.y = element_blank())
 
 # Combine vertically
-p3_combined <- arrangeGrob(p3_hist, p3_box, ncol = 1, heights = c(3, 1))
-
+p3_combined <- egg::ggarrange(p3_hist, p3_box, heights = 2:1, draw=FALSE)
 
 # -------------------------
 # Arrange all three combined plots side by side
@@ -389,7 +387,7 @@ grid.arrange(p1, p2, ncol=2)
 
 ```
 
-Next, we analyze pairwise relationships between these variables. **We see that for stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases. This is because the majority of strokes happens above the age of 70, where body mass index starts to decline.** The association between the average glucose level and body mass index is higher than it is in the non-stroke case.
+Next, we analyze pairwise relationships between these variables. **We see that for stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases. This is because the majority of strokes happens above the age of 70, after which the body mass index starts to decline.** The association between the average glucose level and body mass index is higher than it is in the non-stroke case.
 
 ```{r pairwise-plot, fig.height=5, fig.width=10, warning=FALSE}
 
@@ -902,7 +900,7 @@ ggplot(results_long, aes(x = Metric, y = Value, fill = Model)) +
 ```
 
 
-```{r fig.height=7, fig.width=25, warning=FALSE}
+```{r fig.height=10, fig.width=25, warning=FALSE}
 
 p1 <- plot_roc(data.frame(ground_truth, probs=lr_probs2$.pred_1), "Logistic Regression")
 
@@ -932,7 +930,7 @@ grid.arrange(p1, p2, p3, ncol = 3)
 
 ### **Incorrect predictions of logistic regression**
 
-Now let us look at the distribution of incorrect predictions, in particular false positives, for logistic regression (trained with smote). We consider important predictors of stroke such as age and average glucose level. Since the age is a very important risk factor for stroke, as expected, there are many false positives for older age. There are many false positives across all values of average glucose: this is expected since the class conditional distributions of this variable, i.e., the distributions of average glucose level conditioned on stroke variable, overlap. 
+Now let us look at the distribution of incorrect predictions, in particular false positives, for logistic regression (trained with smote). We consider important predictors of stroke such as age and average glucose level. Since the age is a very important risk factor for stroke, as expected, there are many false positives for older age. There are many false positives across all values of average glucose: this is expected since the class conditional distributions of this variable, i.e., the distributions of average glucose level conditioned on the stroke variable, overlap. 
 
 ```{r incorrect-preds, fig.height=5, fig.width=15, warning=FALSE}
 

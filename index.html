@@ -181,7 +181,7 @@ body {
 the project on building and deploying a stroke prediction model in R. It
 contains data exploration, data visualization,
 statistical/epidemiological and predictive modeling analyses of stroke
-dataset. The final report was completed on Tue Apr 8 14:19:42 2025.</p>
+dataset. The final report was completed on Tue Apr 8 14:44:01 2025.</p>
 <p><strong>Data Description:</strong></p>
 <p>According to the World Health Organization (WHO) stroke is the 2nd
 leading cause of death globally, responsible for approximately 11% of
@@ -196,7 +196,7 @@ relevant information about the patient.</p>
 <h3>Install and load packages</h3>
 <pre class="r"><code>### we use pacman to install and load the required packages
 if (!require(&quot;pacman&quot;)) install.packages(&quot;pacman&quot;)
-pacman::p_load(&quot;caret&quot;, &quot;data.table&quot;, &quot;DescTools&quot;, &quot;epitools&quot;, &quot;GGally&quot;, &quot;ggplot2&quot;, &quot;gridExtra&quot;, &quot;mlbench&quot;, &quot;mltools&quot;, &quot;naniar&quot;, &quot;parsnip&quot;, &quot;pROC&quot;, &quot;ranger&quot;, &quot;reshape2&quot;, &quot;recipes&quot;, &quot;rsample&quot;, &quot;shiny&quot;, &quot;smotefamily&quot;, &quot;themis&quot;,&quot;tidymodels&quot;, &quot;tune&quot;, &quot;viridis&quot;, &quot;workflows&quot;, &quot;yardstick&quot;, &quot;xgboost&quot;)
+pacman::p_load(&quot;caret&quot;, &quot;data.table&quot;, &quot;DescTools&quot;, &quot;egg&quot;, &quot;epitools&quot;, &quot;GGally&quot;, &quot;ggplot2&quot;, &quot;gridExtra&quot;, &quot;mlbench&quot;, &quot;mltools&quot;, &quot;naniar&quot;, &quot;parsnip&quot;, &quot;pROC&quot;, &quot;ranger&quot;, &quot;reshape2&quot;, &quot;recipes&quot;, &quot;rsample&quot;, &quot;shiny&quot;, &quot;smotefamily&quot;, &quot;themis&quot;,&quot;tidymodels&quot;, &quot;tune&quot;, &quot;viridis&quot;, &quot;workflows&quot;, &quot;yardstick&quot;, &quot;xgboost&quot;)
 
 source(&quot;utils.R&quot;)</code></pre>
 </div>
@@ -403,7 +403,7 @@ grid.arrange(p1, p2, ncol=2)</code></pre>
 <strong>We see that for stroke individuals, there is a negative
 correlation between the age and the body mass index. This association is
 positive for non-stroke cases. This is because the majority of strokes
-happens above the age of 70, where body mass index starts to
+happens above the age of 70, after which the body mass index starts to
 decline.</strong> The association between the average glucose level and
 body mass index is higher than it is in the non-stroke case.</p>
 <pre class="r"><code>ggpairs(dat, columns=c(2, 8, 9), aes(color=stroke, alpha=0.3),
@@ -1084,7 +1084,7 @@ xgb_final_model &lt;- xgb.train(
   watchlist = list(train = dtrain),
   verbose = 0
   )</code></pre>
-<pre><code>## [14:22:55] WARNING: src/learner.cc:767: 
+<pre><code>## [14:46:50] WARNING: src/learner.cc:767: 
 ## Parameters: { &quot;auc&quot;, &quot;best_iteration&quot; } are not used.</code></pre>
 <pre class="r"><code>xgb_probs &lt;- predict(xgb_final_model, dtest)
 
@@ -1155,8 +1155,8 @@ average glucose level. Since the age is a very important risk factor for
 stroke, as expected, there are many false positives for older age. There
 are many false positives across all values of average glucose: this is
 expected since the class conditional distributions of this variable,
-i.e., the distributions of average glucose level conditioned on stroke
-variable, overlap.</p>
+i.e., the distributions of average glucose level conditioned on the
+stroke variable, overlap.</p>
 <pre class="r"><code>preds &lt;- lr_result2$pred_class
 
 dat_test_preds &lt;- dat_test
