@@ -932,7 +932,7 @@ grid.arrange(p1, p2, p3, ncol = 3)
 
 ### **Incorrect predictions of logistic regression**
 
-Now let us look at the distribution of incorrect predictions, in particular false positives, for logistic regression (trained with smote). We consider important predictors of stroke such as age and average glucose level. Since the age is a very important risk factor for stroke, as expected, there are many false positives for older age. There are many false positives across all values of average glucose: this is expected since the class conditional distributions, i.e., the distributions of average glucose level conditioned on stroke variable, overlap. But they are mostly concentrated around its two modes.
+Now let us look at the distribution of incorrect predictions, in particular false positives, for logistic regression (trained with smote). We consider important predictors of stroke such as age and average glucose level. Since the age is a very important risk factor for stroke, as expected, there are many false positives for older age. There are many false positives across all values of average glucose: this is expected since the class conditional distributions of this variable, i.e., the distributions of average glucose level conditioned on stroke variable, overlap. 
 
 ```{r incorrect-preds, fig.height=5, fig.width=15, warning=FALSE}
 

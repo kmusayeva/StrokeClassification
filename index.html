@@ -181,7 +181,7 @@ body {
 the project on building and deploying a stroke prediction model in R. It
 contains data exploration, data visualization,
 statistical/epidemiological and predictive modeling analyses of stroke
-dataset. The final report was completed on Tue Apr 8 14:04:49 2025.</p>
+dataset. The final report was completed on Tue Apr 8 14:19:42 2025.</p>
 <p><strong>Data Description:</strong></p>
 <p>According to the World Health Organization (WHO) stroke is the 2nd
 leading cause of death globally, responsible for approximately 11% of
@@ -698,14 +698,14 @@ summary(lr_model)</code></pre>
 <pre class="r"><code>exp(lr_model$coefficients)</code></pre>
 <pre><code>##    (Intercept) heart_disease1            age 
 ##   0.0007900377   1.5270177901   1.0751169789</code></pre>
-<p>After adjusting for age, the odds ratio for stroke in individuals
-with heart disease decreased from 4.71 to 1.53, indicating substantial
-confounding by age. This suggests that age is a confounding factor in
-the association between heart disease and stroke.</p>
-<p>The same analysis holds for hypertension. After adjusting for age,
-the odds ratio for stroke in individuals with hypertension decreased
-from 3.7 to 1.6. This suggests that age is a confounding factor in the
-association between hypertension and stroke.</p>
+<p><strong>After adjusting for age, the odds ratio for stroke in
+individuals with heart disease decreased from 4.71 to 1.53, indicating
+substantial confounding by age. This suggests that age is a confounding
+factor in the association between heart disease and stroke.</strong></p>
+<p>The same analysis holds for hypertension. <strong>After adjusting for
+age, the odds ratio for stroke in individuals with hypertension
+decreased from 3.7 to 1.6. This suggests that age is a confounding
+factor in the association between hypertension and stroke.</strong></p>
 <pre class="r"><code>lr_model &lt;- glm(stroke ~ hypertension + age, data=dat, family = &quot;binomial&quot;)
 
 summary(lr_model)</code></pre>
@@ -1084,7 +1084,7 @@ xgb_final_model &lt;- xgb.train(
   watchlist = list(train = dtrain),
   verbose = 0
   )</code></pre>
-<pre><code>## [14:08:11] WARNING: src/learner.cc:767: 
+<pre><code>## [14:22:55] WARNING: src/learner.cc:767: 
 ## Parameters: { &quot;auc&quot;, &quot;best_iteration&quot; } are not used.</code></pre>
 <pre class="r"><code>xgb_probs &lt;- predict(xgb_final_model, dtest)
 
@@ -1154,9 +1154,9 @@ smote). We consider important predictors of stroke such as age and
 average glucose level. Since the age is a very important risk factor for
 stroke, as expected, there are many false positives for older age. There
 are many false positives across all values of average glucose: this is
-expected since the class conditional distributions, i.e., the
-distributions of average glucose level conditioned on stroke variable,
-overlap. But they are mostly concentrated around its two modes.</p>
+expected since the class conditional distributions of this variable,
+i.e., the distributions of average glucose level conditioned on stroke
+variable, overlap.</p>
 <pre class="r"><code>preds &lt;- lr_result2$pred_class
 
 dat_test_preds &lt;- dat_test
