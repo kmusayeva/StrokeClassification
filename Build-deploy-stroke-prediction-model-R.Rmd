@@ -190,7 +190,7 @@ ggplot(stroke_pct, aes(x = value, y = pct, fill = variable)) +
 ```
 
 
-We use **Cramer's V** to measure associations between multiple categories. It ranges from 0 (no association) to 1 (perfect association). The following heatmap shows that there is some association between smoking status and marriage status, smoking status and work type. This is likely due to the age of individuals as a confounding variable. Most of the associations, however, are weak. 
+We use **Cramer's V** to measure associations between categories in a single table. It ranges from 0 (no association) to 1 (perfect association). The following heatmap shows that there is some association between smoking status and marriage status, smoking status and work type. This is likely due to the age of individuals as a confounding variable. Most of the associations, however, are weak. 
 
 ```{r echo=FALSE}
 cat_vars <- dat[, -c(2, 8, 9, 11)] %>%
@@ -387,7 +387,7 @@ grid.arrange(p1, p2, ncol=2)
 
 ```
 
-Next, we analyze pairwise relationships between these variables. **We see that for stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases. This is because the majority of strokes happens above the age of 70, after which the body mass index starts to decline.** The association between the average glucose level and body mass index is higher than it is in the non-stroke case.
+Next, we analyze pairwise relationships between these variables split based on the stroke variable (highlighted as yellow or orange). **We see that individual with highly elevated glucose level are older individuals. We see that for stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases. This is because the majority of strokes happens above the age of 70, after which the body mass index starts to decline. The association between the average glucose level and body mass index is higher in stroke individuals, than it is in non-stroke individuals, this is due to the positive relationship of obesity, high glucose level and stroke.**
 
 ```{r pairwise-plot, fig.height=5, fig.width=10, warning=FALSE}
 
@@ -395,12 +395,13 @@ ggpairs(dat, columns=c(2, 8, 9), aes(color=stroke, alpha=0.3),
         lower=list(continuous="smooth"), diag=list(continuous="densityDiag"))+
   scale_fill_brewer(palette = "Set3") +
   scale_color_brewer(palette = "Set2")
-
+  
 ```
 
-**75%** of the hypertension individuals are above the age of **~52** and **half** of the hypertension individuals are above the age of **~62**. **Stroke appears later in life, regardless of hypertension, however the hypertension individuals who experienced stroke are generally older individuals**.
+**75%** of the hypertension individuals are above the age of **~52** and **half** of the hypertension individuals are above the age of **~62**. **Stroke appears later in life, regardless of hypertension, however the hypertension individuals who experienced stroke are generally older individuals.**
 
-```{r pairwise_age_hypertension, fig.height=5, fig.width=15, warning=FALSE}
+
+```{r pairwise-age-hypertension, fig.height=5, fig.width=15, warning=FALSE}
 
 p1 <- ggplot(dat, aes(x = hypertension, y = age, fill = hypertension)) + 
       geom_boxplot(outlier.shape = NA, position = position_dodge(0.8)) +
@@ -458,7 +459,7 @@ p2 <- ggplot(dat, aes(x = heart_disease, y = age, fill = stroke)) +
       ) +
       theme_minimal(base_size = 14)+
       theme(
-         plot.title = element_text(hjust = 0.5, size = 16)
+         plot.title = element_text(hjust = 0.5, size = 18)
       )
 
 grid.arrange(p1, p2, ncol=2)
@@ -469,7 +470,7 @@ The following plot shows the age distribution across combinations of hypertensio
 
 ```{r pairwise_age_heartd_hypert, fig.height=5, fig.width=15, warning=FALSE}
 
-stroke_hypert_heartd <- dat %>%mutate(hyp_hd = interaction(hypertension, heart_disease, sep = "_"))
+stroke_hypert_heartd <- dat %>% mutate(hyp_hd = interaction(hypertension, heart_disease, sep = "_"))
 
 ggplot(stroke_hypert_heartd, aes(x = hyp_hd, y = age, fill = stroke)) +
     geom_boxplot(position = position_dodge(width = 0.75), outlier.shape = NA) +
@@ -484,7 +485,7 @@ ggplot(stroke_hypert_heartd, aes(x = hyp_hd, y = age, fill = stroke)) +
       title = "Age distribution by hypertension & heart disease, split by stroke"
     ) +
     theme_minimal(base_size = 14) +
-    theme(plot.title = element_text(hjust = 0.5, size = 16))
+    theme(plot.title = element_text(hjust = 0.5, size = 18))
 
 
 ```
@@ -606,6 +607,7 @@ oddsratio(tbl_gender)
 
 #### **Attributable risk**
 
+Since we are dealing with a cross-sectional data and risk is a time-related concept, in what follows we talk about the prevalence of disease.
 What percentage of the stroke cases in the hypertension individuals can be attributed to hypertension? To answer this question we need to compute attributable risk percent: **70% of strokes in hypertension individuals could be attributed to hypertension.**
 
 ```{r attri-risk-hypertension}
@@ -637,9 +639,6 @@ par <- round(((stroke_above_60/total_above_60)-(stroke_below_60/total_below_60))
 cat(paste0("Attributable risk percent due to being above 60 is ", par, "%."))
 
 ```
-
-
-#### **Population attributable risk**
 
 What percentage of the stroke cases in the data can be attributed to hypertension? To answer this question we need to compute population attributable risk percent. The computation below shows that only **19% of all stroke cases could be attributed to hypertension**. In a similar vein, only **14% of all stroke cases could be attributed to heart disease**.
 
@@ -1007,7 +1006,7 @@ knitr::include_graphics("shiny.png")
 
 # Task Five: Findings and Conclusions
 
-The prevalence of stroke cases is ~5%, making this a highly imbalanced dataset from a classification perspective. Data visualization revealed considerable overlap between the class-conditional distributions of important variables such as body mass index, average glucose level, heart disease, and age. This indicates that no single covariate is clearly discriminative for stroke classification. From precision medicine point of view, incorporating family history, ethnic origin, other environmental factors such as geographic location, socioeconomic status, as well as genomic profile of individuals would improve the classification of stroke cases. Importantly, since this is a cross-sectional data, although obese individuals with heart condition is a non-stroke case in the dataset, they are at higher risk of stroke as they age.
+The prevalence of stroke cases is ~5%, making this a highly imbalanced dataset from a classification perspective. Data visualization revealed considerable overlap between the class-conditional distributions of important variables such as body mass index, average glucose level, heart disease, and age. This indicates that no single covariate is clearly discriminative for stroke classification. From precision medicine point of view, incorporating family history, ethnic origin, other environmental factors such as geographic location, socioeconomic status, as well as genomic profile of individuals would improve the classification of stroke cases. Importantly, since this is a cross-sectional data, although obese individuals with hypertension is a non-stroke case in the dataset, they are at higher risk of stroke as they age.
 
 Statistical analysis showed that age is a particularly important risk factor: the majority of stroke cases occur above the age of ~60. Other important predictors are hypertension and average glucose level. In contrast, stroke occurs at similar rates across male and female individuals.
 
