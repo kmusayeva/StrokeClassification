@@ -776,7 +776,7 @@ and train with SMOTE:
 dat_smote_recipe <- recipe(stroke ~ ., data = dat_train) %>%
   step_impute_knn(all_predictors()) %>%
   step_dummy(all_nominal_predictors()) %>% 
-  step_smote(stroke, over_ratio = 1)
+  step_smote(stroke, over_ratio = 0.7)
 
 lr_model2 <- logistic_reg() %>%  set_engine("glm") %>% set_mode("classification") 
 
@@ -993,7 +993,7 @@ grid.arrange(p1, p2, ncol=2)
 
 **Positive predictive value and negative predictive value of logistic regression**
 
-The positive predictive value (PPV) is the probability that an individual predicted to have stroke truly has stroke, while the negative predictive value (NPV) is the probability that an individual predicted not to have stroke truly does not have stroke. Considering our logistic regression model as a diagnostic tool, the probability that an individual predicted to have stroke has stroke is 17% and the probability that an individual predicted not to have stroke does not have stroke is 98%.
+The positive predictive value (PPV) is the probability that an individual predicted to have stroke truly has stroke, while the negative predictive value (NPV) is the probability that an individual predicted not to have stroke truly does not have stroke. Considering our logistic regression model as a diagnostic tool, the probability that an individual predicted to have stroke has stroke is 16% and the probability that an individual predicted not to have stroke does not have stroke is 98%.
 
 ```{r}
 
