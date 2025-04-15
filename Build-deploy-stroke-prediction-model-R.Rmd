@@ -1,5 +1,5 @@
 ---
-title: "Build and deploy a stroke prediction model using R"
+title: "Build and deploy stroke prediction model using R"
 author: "Khadija Musayeva"
 date: "`r Sys.Date()`"
 output:
@@ -16,7 +16,7 @@ body {
 
 # About Data Analysis Report
 
-This RMarkdown file contains the report of the data analysis done for the project on building and deploying a stroke prediction model in R. It contains data exploration, data visualization, statistical/epidemiological and predictive modeling analyses of stroke dataset. The final report was completed on `r date()`. 
+This RMarkdown file contains the report of the data analysis done for the project on building and deploying stroke prediction model in R. It contains data exploration, data visualization, statistical/epidemiological and predictive modeling analyses of stroke dataset. The final report was completed on `r date()`. 
 
 **Data Description:**
 
@@ -32,7 +32,7 @@ This data set is used to predict whether a patient is likely to get stroke based
 ```{r message=FALSE, warning=FALSE}
 ### we use pacman to install and load the required packages
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load("caret", "data.table", "DescTools", "egg", "epitools", "GGally", "ggplot2", "gridExtra", "mlbench", "mltools", "naniar", "parsnip", "pROC", "ranger", "reshape2", "recipes", "rsample", "shiny", "smotefamily", "themis","tidymodels", "tune", "viridis", "workflows", "yardstick", "xgboost")
+pacman::p_load("caret", "data.table", "DescTools", "dials", "egg", "epitools", "GGally", "ggplot2", "gridExtra", "kableExtra", "mlbench", "mltools", "naniar", "parsnip", "pROC", "ranger", "reshape2", "recipes", "rsample", "shiny", "smotefamily", "themis","tidymodels", "tune", "viridis", "workflows", "yardstick", "xgboost")
 
 source("utils.R")
 
@@ -62,7 +62,10 @@ str(dat)
 Most of the variables are categorical. We convert them into factor.
 
 ```{r warning=FALSE}
-dat <- dat[, -1]
+
+dat <- dat[, -1] ### remove the first id column
+
+dat <- dat[dat$gender!="Other",]
 
 dat[, -c(2, 8, 9)] <- lapply(dat[, -c(2, 8, 9)], as.factor)
   
@@ -74,12 +77,16 @@ dat$bmi <- as.numeric(dat$bmi)
 Let us have a glimpse of the data:
 
 ```{r}
-head(dat)
+
+kable(head(dat), "html") %>%
+  kable_styling(font_size = 12) %>%
+  scroll_box(width = "100%", height = "300px")
+
 ```
 
-### **Analysis of missing values**
+### **Analysis of Missing Values**
 
-To analyze the missing values we use the naniar package. 
+To visualize the distribution of missing values we use the naniar package. 
 
 The following plot shows that 4 percent of bmi values, or 201 of observations have bmi values missing. 
 
@@ -221,7 +228,10 @@ ggplot(cramerV_tidy, aes(Var1, Var2, fill = value)) +
 
 ```
 
-What about continuous variables: age, average glucose level, and body mass index?
+
+#### **Distribution of Continuous Variables**
+
+What about the continuous variables: age, average glucose level, and body mass index?
 
 Half of the individuals have an average glucose level above the normal 100 mg/dL threshold, indicating a substantial proportion may be experiencing hyperglycemia. In particular, there is a cluster of individuals whose glucose levels are concentrated around ~210 mg/dL. Body mass index distribution is right skewed with more than half of the individuals having a body mass index (BMI) above the normal upper limit of 24.9 kg/m^2, i.e., half of the individuals are overweight or obese. The distribution of age is almost uniform, it includes all ages from infants to elderly.
 
@@ -299,7 +309,7 @@ grid.arrange(p1_combined, p2_combined, p3_combined, ncol = 3)
 
 ```
 
-The distribution of average glucose level among individuals who experienced a stroke is visibly multimodal, with a secondary peak above 200. The median average glucose level among stroke cases is around 105. **While individuals with average glucose levels above ~ 200mg/dL constitute a small portion of observations, they account for approximately 25% of all stroke cases,** as the following plot shows.
+The distribution of average glucose level among individuals who experienced stroke is visibly multimodal, with a secondary peak above 200. The median average glucose level among stroke cases is around 105. **While individuals with average glucose levels above ~ 200mg/dL constitute a small portion of observations, they account for approximately 25% of all stroke cases,** as the following plot shows.
 
 ```{r glucose-stroke-hist, fig.height=4, fig.width=9, warning=FALSE}
 
@@ -358,7 +368,6 @@ grid.arrange(p1, p2, ncol=2)
 
 ```
 
-
 The following plots show that the age is clearly a risk factor for stroke: **75% of individuals with stroke are aged above ~60**, whereas **75% of individuals with no stroke are aged below ~60. For stroke individuals, the distribution is left skewed with half of strokes happening above the age 70.** There are no stroke cases between the ages 20 and 30 in the data, but there are 2 children with stroke. The cases involving children can be considered special cases.
 
 ```{r age-stroke-plot, fig.height=4, fig.width=9, warning=FALSE}
@@ -387,7 +396,7 @@ grid.arrange(p1, p2, ncol=2)
 
 ```
 
-Next, we analyze pairwise relationships between these variables split based on the stroke variable (highlighted as yellow or orange). **We see that individual with highly elevated glucose level are older individuals. We see that for stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases. This is because the majority of strokes happens above the age of 70, after which the body mass index starts to decline. The association between the average glucose level and body mass index is higher in stroke individuals, than it is in non-stroke individuals, this is due to the positive relationship of obesity, high glucose level and stroke.**
+Next, we analyze pairwise relationships between these variables split based on the stroke variable (highlighted as yellow or orange). We see that individual with highly elevated glucose level are older individuals and for stroke individuals, there is a negative correlation between the age and the body mass index. This association is positive for non-stroke cases. This is because the majority of strokes happens above the age of 70, after which the body mass index starts to decline. The association between the average glucose level and body mass index is higher in stroke individuals, than it is in non-stroke individuals, this is due to the positive relationship of obesity, high glucose level and stroke.
 
 ```{r pairwise-plot, fig.height=5, fig.width=10, warning=FALSE}
 
@@ -492,11 +501,11 @@ ggplot(stroke_hypert_heartd, aes(x = hyp_hd, y = age, fill = stroke)) +
 
 
 
-### **Epidemiological analysis**
+### **Epidemiological Analysis**
 
-In this section, we will do some statistical analysis of association between variables. 
+In this section, we do some statistical analysis of association between variables. 
 
-#### **Odds ratio**
+#### **Odds Ratio**
 
 To compute the odds ratio we use **epitools package**. 
 The outcome of interest is stroke, and the exposures are: hypertension, heart disease, average glucose level, age and gender.
@@ -590,10 +599,6 @@ exp(lr_model$coefficients)
 ```
 
 
-
-
-
-
 Now, how about the gender? **There is no association between gender and the occurrence of stroke.**
 
 ```{r odd-ratio-gender, message=FALSE, warning=FALSE}
@@ -605,7 +610,7 @@ oddsratio(tbl_gender)
 ``` 
 
 
-#### **Attributable risk**
+#### **Attributable Risk**
 
 Since we are dealing with a cross-sectional data and risk is a time-related concept, in what follows we talk about the prevalence of disease.
 What percentage of the stroke cases in the hypertension individuals can be attributed to hypertension? To answer this question we need to compute attributable risk percent: **70% of strokes in hypertension individuals could be attributed to hypertension.**
@@ -688,11 +693,11 @@ exp(coeffs_sign)
 
 # Task Three: Evaluate and select prediction models
 
-### **First thing first: What evaluation measures?**
+### **Evaluation Measures**
 
-This is a problem with high class imbalance: only around 5 percent of observations are stroke cases. Thus it is important to choose relevant evaluation measures. Without any learning, without even considering any input variables, predicting no stroke would achieve a very high accuracy result. Thus we concentrate on **sensitivity** and **specificity** first. **Sensitivity measures the proportion of individuals correctly identified as stroke cases among those who actually have a stroke, and specificity measures the proportion of individuals correctly identified as healthy among those who are actually healthy.** These measures take values between O and 1. Now, if all individuals are predicted as non-stroke ones, then the specificity will be 1 since there is no false positives. However, sensitivity in this case will be 0, since 0 stroke case, i.e., 0 true positive is identified.
+This is a problem with high class imbalance: only around 5 percent of observations are stroke cases. Thus it is important to choose relevant evaluation measures. Without any learning, without even considering any input variables, predicting no stroke would achieve a very high accuracy result. Thus we concentrate on **sensitivity** and **specificity** first. **Sensitivity measures the proportion of individuals correctly identified as stroke cases among those who actually have stroke, and specificity measures the proportion of individuals correctly identified as healthy among those who are actually healthy.** These measures take values between O and 1. Now, if all individuals are predicted as non-stroke ones, then the specificity will be 1 since there is no false positives. However, sensitivity in this case will be 0, since 0 stroke case, i.e., 0 true positive is identified.
 
-Sensitivity is also known as recall. Precision computes the fraction of true positives over the sum of true and false positives. The **F1-measure** is the harmonic mean of precision and recall, it balances precision and recall. But notice that if the specificity is 1 and the sensitivity is 0, then the precision is undefined, since there is neither true positives or false positives predicted. Thus, F1 measure is not defined.
+Sensitivity is also known as recall.  Precision computes the fraction of true positives in all positively predicted outputs (i.e., true and false positives). The **F1-measure** is the harmonic mean of precision and recall, it balances precision and recall. But notice that if the specificity is 1 and the sensitivity is 0, then the precision is undefined, since there is neither true positives or false positives predicted. Thus, F1 measure is not defined.
 
 Next, we consider the **area under the ROC curve**. This curve draws sensitivity against false positive rate (1-specificity) at every cut-off threshold level for predicted probability values, and the larger the area under this curve the better the predictive performance of algorithm.
 
@@ -702,7 +707,7 @@ Finally, we consider **Matthews correlation coefficient. The value of this metri
 Now, since we are dealing with the class-imbalance problem, we can choose cut-off threshold values below the standard 0.5 level. This will output different values for sensitivity, specificity, F1-measure and Matthews coefficient. Our strategy is based on the Youden's index, i.e., the threshold that maximizes sensitivity + specificity - 1.
 
 
-### **Missing values, data splitting**
+### **Missing Values, Data Splitting**
 
 We  can impute the missing values using the k-nearest neighbour method. It means that the individuals having similar characteristics will have similar body mass index. But it is questionable from precision medicine point of view. We can as well remove these individuals from the data set on the basis of biological differences between individuals even with very similar characteristics. 
 
@@ -713,31 +718,32 @@ In what follow, we use set.seed to ensure reproducibility.
 
 set.seed(123)
 
-dat_split <- initial_split(dat, prop = 3/4, strata = stroke)
-
-dat_train <- training(dat_split)
-
-dat_test <- testing(dat_split)
-                      
+split1 <- initial_split(dat, prop = 0.7, strata = stroke)
+dat_train <- training(split1)
 dat_cv <- vfold_cv(dat_train)
+
+temp <- testing(split1)
+
+split2 <- initial_split(temp, prop = 0.5, strata = stroke)
+dat_val <- training(split2)
+dat_test <- testing(split2)
+ground_truth <- factor(dat_test$stroke, levels = c(1, 0))
 
 ```
 
 
 
-### **Predictive modeling**
+### **Predictive Modeling**
 
 We use logistic regression, also models of higher capacity, capable of learning non-linear decision boundaries, such as random forest and an improved version of the gradient boosting method, extreme gradient boosting. The latter models are particularly suitable for data with many categorical variables.
 
 We train logistic regression with and without SMOTE, and the remaining models with SMOTE. The latter generates synthetic samples for the rare class based on the k-nearest neighbour method. The proportion of synthetic examples can be controlled thanks to the over_ratio option in the recipe function. The number of synthetic samples generated affect sensitivity and specificity: higher number of synthetic samples will improve sensitivity, and degrade specificity.
 
-We use parsnip package of tidymodels to train logistic regression model and random forest. There is no implementation of extreme gradient boosting, xgb, in tidymodels, so we use xgboost package. We do a grid search for hyperparameter tuning.
+We use parsnip package of tidymodels to train logistic regression model, random forest and xgboost and we perform grid search for hyperparameter tuning.
 
 #### **Logistic regression**
 
 ```{r}
-
-ground_truth <- factor(dat_test$stroke, levels = c(1, 0)) # set the ground truth
 
 dat_recipe <- recipe(stroke ~ ., data = dat_train) %>% step_impute_knn(all_predictors())
 
@@ -747,11 +753,19 @@ lr_workflow <- workflow() %>% add_model(lr_model) %>% add_recipe(dat_recipe)
 
 lr_fit <- fit(lr_workflow, data = dat_train)
 
-lr_fit_extracted <- extract_fit_engine(lr_fit)
+###------threshold selection
+
+val_probs <- predict(lr_fit, dat_val, type = "prob")$.pred_1
+val_truth <- factor(dat_val$stroke, levels = c(1, 0))
+
+threshold_info <- best_threshold(val_truth, val_probs)
+thr <- threshold_info$threshold
+
+###------apply to test set
 
 lr_probs1 <- predict(lr_fit, dat_test, type = "prob")
 
-lr_result1 <- evaluate_model_fit(ground_truth, lr_probs1$.pred_1)
+lr_result1 <- evaluate_model_fit(thr, ground_truth, lr_probs1$.pred_1)
 
 ```
 
@@ -762,7 +776,7 @@ and train with SMOTE:
 dat_smote_recipe <- recipe(stroke ~ ., data = dat_train) %>%
   step_impute_knn(all_predictors()) %>%
   step_dummy(all_nominal_predictors()) %>% 
-  step_smote(stroke, over_ratio = 0.5)
+  step_smote(stroke, over_ratio = 1)
 
 lr_model2 <- logistic_reg() %>%  set_engine("glm") %>% set_mode("classification") 
 
@@ -770,103 +784,126 @@ lr_workflow2 <- workflow() %>% add_model(lr_model2) %>% add_recipe(dat_smote_rec
 
 lr_fit2 <- fit(lr_workflow2, data = dat_train)
 
-lr_fit_extracted2 <- extract_fit_engine(lr_fit2)
+###------threshold selection
+
+val_probs <- predict(lr_fit2, dat_val, type = "prob")$.pred_1
+val_truth <- factor(dat_val$stroke, levels = c(1, 0))
+
+threshold_info <- best_threshold(val_truth, val_probs)
+thr <- threshold_info$threshold
+
+###------apply to test set
 
 lr_probs2 <- predict(lr_fit2, dat_test, type = "prob")
-
-lr_result2 <- evaluate_model_fit(ground_truth, lr_probs2$.pred_1)
+lr_result2 <- evaluate_model_fit(thr, ground_truth, lr_probs2$.pred_1)
 
 ```
 
 
-#### **Random forest**
+#### **Random Forest**
 
 ```{r}
 
-rf_model <- rand_forest() %>% set_args(mtry = tune()) %>%
-  set_engine("ranger", importance = "impurity") %>%
-  set_mode("classification") 
-
+rf_model <- rand_forest(
+  mtry = tune(),    # Number of predictors sampled at each split
+  trees = tune(),   # Number of trees in the forest
+  min_n = tune()    # Minimum number of data points in a node to proceed with a split
+) %>% set_engine("ranger") %>% set_mode("classification")
 
 rf_workflow <- workflow() %>%
-  add_recipe(dat_smote_recipe) %>%
+  add_recipe(dat_recipe) %>%
   add_model(rf_model)
 
-rf_grid <- expand.grid(mtry = c(2, 3, 4, 5))
+rf_grid <- expand.grid(
+  mtry = c(2, 3, 5, 7),
+  trees = c(100, 300),
+  min_n = c(5, 10)
+)
 
-rf_tune_results <- rf_workflow %>% tune_grid(resamples = dat_cv, grid = rf_grid, metrics = metric_set(roc_auc))
-
-rf_tune_results %>%  collect_metrics()
+rf_tune_results <- rf_workflow %>% 
+    tune_grid(resamples = dat_cv, 
+              grid = rf_grid, 
+              metrics = metric_set(roc_auc)
+              )
 
 param_final <- rf_tune_results %>% select_best(metric = "roc_auc")
 
-rf_workflow <- rf_workflow %>% finalize_workflow(param_final)
+rf_workflow_final <- rf_workflow %>% finalize_workflow(param_final)
 
-rf_fit <- rf_workflow %>% last_fit(dat_split)
+rf_fit <- rf_workflow_final %>% fit(data = dat_train)
 
-#test_performance <- rf_fit %>% collect_metrics()
+###-------------Threshold selection on validation set
 
-rf_probs <- as.data.frame(rf_fit$.predictions)$.pred_1
+rf_probs_val <- predict(rf_fit, dat_val, type = "prob")$.pred_1
 
-rf_result <- evaluate_model_fit(ground_truth, rf_probs)
+threshold_info <- best_threshold(val_truth, rf_probs_val)
+
+thresh<- threshold_info$threshold
+
+###--------------Apply to test data
+
+rf_probs_test <- predict(rf_fit, dat_test, type = "prob")$.pred_1
+
+rf_result <- evaluate_model_fit(thresh, ground_truth, rf_probs_test)
 
 ```
 
 
-#### **Extreme gradient boosting**
+#### **Extreme Gradient Boosting**
 
-```{r message=FALSE, warning=FALSE}
-dat_smote_recipe <- dat_smote_recipe %>% prep()
+```{r}
 
-X_train <- dat_train %>% select(-stroke)
-X_test <- dat_test %>% select(-stroke)
+xgb_spec <- boost_tree(
+  tree_depth = tune(),         # Maximum tree depth
+  learn_rate = tune(),         # Learning rate (eta)
+) %>% set_mode("classification") %>%  set_engine("xgboost", eval_metric = "auc")       
 
-X_train <- bake(dat_smote_recipe, X_train)
-X_test <- bake(dat_smote_recipe, X_test)
+wflow <- workflow() %>% add_recipe(dat_smote_recipe) %>% add_model(xgb_spec)
 
-y_train <- as.numeric(dat_train$stroke)-1
-y_test  <- as.numeric(dat_test$stroke)-1
-
-
-X_train_matrix <- as.matrix(X_train)
-X_test_matrix <- as.matrix(X_test)
-
-dtrain <- xgb.DMatrix(data = X_train_matrix, label = y_train)
-dtest  <- xgb.DMatrix(data = X_test_matrix, label = y_test)
-
-
-params_list <- expand.grid(
-  eta = c(0.01, 0.1, 0.3),
-  max_depth = c(3, 6, 9, 12),
-  subsample = c(0.3, 0.5, 0.7, 0.9),
-  colsample_bytree = c(0.2, 0.5, 0.8)
+# Here we use grid_regular() from the dials package to create a regular grid.
+grid_vals <- grid_regular(
+  tree_depth(range = c(3, 9)),
+  learn_rate(range = c(0.01, 0.3)),
+  levels = 3
 )
 
-cv_results <- xgb_tune(params_list, dtrain, 100)
+tune_res <- tune_grid(
+  wflow,
+  resamples = dat_cv,
+  grid = grid_vals,
+  metrics = metric_set(roc_auc)
+)
 
-cv_summary <- rbindlist(cv_results)
+# Collect and inspect the results.
+#collect_metrics(tune_res)
 
-best_params <- cv_summary[which.max(auc)]
+# Select the best hyperparameter configuration based on auc.
+best_res <- select_best(tune_res, metric="roc_auc")
 
-### we train xgb with the best hyperparameter configuration on the entire training set.
-xgb_final_model <- xgb.train(
-  params = as.list(best_params),
-  data = dtrain,
-  nrounds = best_params$best_iteration,  
-  watchlist = list(train = dtrain),
-  verbose = 0
-  )
+# Finalize the workflow with the best parameters.
+final_wflow <- finalize_workflow(wflow, best_res)
 
-xgb_probs <- predict(xgb_final_model, dtest)
+xgb_fit <- final_wflow %>% fit(data = dat_train)
 
-xgb_result <- evaluate_model_fit(ground_truth, xgb_probs)
+###-------------------Threshold selection
 
+xgb_probs_val <- predict(xgb_fit, dat_val, type = "prob")$.pred_1
+
+threshold_info <- best_threshold(val_truth, xgb_probs_val)
+
+thresh <- threshold_info$threshold
+
+###-----------------Apply to test data
+
+xgb_probs_test <- predict(xgb_fit, dat_test, type = "prob")$.pred_1
+
+xgb_result <- evaluate_model_fit(thresh, ground_truth, xgb_probs_test)
 
 ```
 
 
 
-### **Performance comparison of models**
+### **Performance Comparison of Models**
 
 **According to Matthiews correlation coefficient, all methods perform weakly (better than random)**. Their performances are comparable, but logistic regression with smote stands out in terms of AUC, F1-measure, Matthews coefficient and specificity. We see that generating synthetic examples overall improved the predictive performance of logistic regression model at the cost of sensitivity. 
 
@@ -899,21 +936,21 @@ ggplot(results_long, aes(x = Metric, y = Value, fill = Model)) +
 ```
 
 
-```{r fig.height=10, fig.width=25, warning=FALSE}
+```{r echo=FALSE, fig.height=10, fig.width=25, warning=FALSE}
 
 p1 <- plot_roc(data.frame(ground_truth, probs=lr_probs2$.pred_1), "Logistic Regression")
 
-p2 <-  plot_roc(data.frame(ground_truth, probs=rf_probs), "Random Forest")
+p2 <-  plot_roc(data.frame(ground_truth, probs=rf_probs_test), "Random Forest")
 
-p3 <-  plot_roc(data.frame(ground_truth, probs=xgb_probs), "XGB")
+p3 <-  plot_roc(data.frame(ground_truth, probs=xgb_probs_test), "XGB")
 
-grid.arrange(p1, p2, p3, ncol = 4)
+grid.arrange(p1, p2, p3, ncol = 3)
 
 ```
 
 From the confusion matrix, we see that a lot of individuals are predicted as the stroke case, since we chose lower cut-off threshold from the ROC curve. Logistic regression has smaller number of false positives.
 
-```{r fig.height=5, fig.width=15, warning=FALSE}
+```{r echo=FALSE, fig.height=5, fig.width=15, warning=FALSE}
 
 p1 <- plot_confusion_matrix(ground_truth, lr_result2$pred_class, round(lr_result2$matcc, 2), "Logistic regression")
 
@@ -956,7 +993,7 @@ grid.arrange(p1, p2, ncol=2)
 
 **Positive predictive value and negative predictive value of logistic regression**
 
-The positive predictive value (PPV) is the probability that an individual predicted to have a stroke truly has a stroke, while the negative predictive value (NPV) is the probability that an individual predicted not to have a stroke truly does not have a stroke. Considering our logistic regression model as a diagnostic tool, the probability that an individual predicted to have a stroke has a stroke is 16% and the probability that an individual predicted not to have a stroke does not have a stroke is 98%.
+The positive predictive value (PPV) is the probability that an individual predicted to have stroke truly has stroke, while the negative predictive value (NPV) is the probability that an individual predicted not to have stroke truly does not have stroke. Considering our logistic regression model as a diagnostic tool, the probability that an individual predicted to have stroke has stroke is 17% and the probability that an individual predicted not to have stroke does not have stroke is 98%.
 
 ```{r}
 

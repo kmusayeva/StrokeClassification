@@ -11,9 +11,9 @@
 
 <meta name="author" content="Khadija Musayeva" />
 
-<meta name="date" content="2025-04-11" />
+<meta name="date" content="2025-04-15" />
 
-<title>Build and deploy a stroke prediction model using R</title>
+<title>Build and deploy stroke prediction model using R</title>
 
 <script src="Build-deploy-stroke-prediction-model-R_files/header-attrs-2.29/header-attrs.js"></script>
 <script src="Build-deploy-stroke-prediction-model-R_files/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -34,6 +34,8 @@
 <script src="Build-deploy-stroke-prediction-model-R_files/navigation-1.1/tabsets.js"></script>
 <link href="Build-deploy-stroke-prediction-model-R_files/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="Build-deploy-stroke-prediction-model-R_files/highlightjs-9.12.0/highlight.js"></script>
+<script src="Build-deploy-stroke-prediction-model-R_files/kePrint-0.0.1/kePrint.js"></script>
+<link href="Build-deploy-stroke-prediction-model-R_files/lightable-0.0.1/lightable.css" rel="stylesheet" />
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -162,10 +164,10 @@ pre code {
 
 
 
-<h1 class="title toc-ignore">Build and deploy a stroke prediction model
+<h1 class="title toc-ignore">Build and deploy stroke prediction model
 using R</h1>
 <h4 class="author">Khadija Musayeva</h4>
-<h4 class="date">2025-04-11</h4>
+<h4 class="date">2025-04-15</h4>
 
 </div>
 
@@ -178,10 +180,10 @@ body {
 <div id="about-data-analysis-report" class="section level1">
 <h1>About Data Analysis Report</h1>
 <p>This RMarkdown file contains the report of the data analysis done for
-the project on building and deploying a stroke prediction model in R. It
+the project on building and deploying stroke prediction model in R. It
 contains data exploration, data visualization,
 statistical/epidemiological and predictive modeling analyses of stroke
-dataset. The final report was completed on Fri Apr 11 12:30:34 2025.</p>
+dataset. The final report was completed on Tue Apr 15 14:19:03 2025.</p>
 <p><strong>Data Description:</strong></p>
 <p>According to the World Health Organization (WHO) stroke is the 2nd
 leading cause of death globally, responsible for approximately 11% of
@@ -196,7 +198,7 @@ relevant information about the patient.</p>
 <h3>Install and load packages</h3>
 <pre class="r"><code>### we use pacman to install and load the required packages
 if (!require(&quot;pacman&quot;)) install.packages(&quot;pacman&quot;)
-pacman::p_load(&quot;caret&quot;, &quot;data.table&quot;, &quot;DescTools&quot;, &quot;egg&quot;, &quot;epitools&quot;, &quot;GGally&quot;, &quot;ggplot2&quot;, &quot;gridExtra&quot;, &quot;mlbench&quot;, &quot;mltools&quot;, &quot;naniar&quot;, &quot;parsnip&quot;, &quot;pROC&quot;, &quot;ranger&quot;, &quot;reshape2&quot;, &quot;recipes&quot;, &quot;rsample&quot;, &quot;shiny&quot;, &quot;smotefamily&quot;, &quot;themis&quot;,&quot;tidymodels&quot;, &quot;tune&quot;, &quot;viridis&quot;, &quot;workflows&quot;, &quot;yardstick&quot;, &quot;xgboost&quot;)
+pacman::p_load(&quot;caret&quot;, &quot;data.table&quot;, &quot;DescTools&quot;, &quot;dials&quot;, &quot;egg&quot;, &quot;epitools&quot;, &quot;GGally&quot;, &quot;ggplot2&quot;, &quot;gridExtra&quot;, &quot;kableExtra&quot;, &quot;mlbench&quot;, &quot;mltools&quot;, &quot;naniar&quot;, &quot;parsnip&quot;, &quot;pROC&quot;, &quot;ranger&quot;, &quot;reshape2&quot;, &quot;recipes&quot;, &quot;rsample&quot;, &quot;shiny&quot;, &quot;smotefamily&quot;, &quot;themis&quot;,&quot;tidymodels&quot;, &quot;tune&quot;, &quot;viridis&quot;, &quot;workflows&quot;, &quot;yardstick&quot;, &quot;xgboost&quot;)
 
 source(&quot;utils.R&quot;)</code></pre>
 </div>
@@ -232,31 +234,276 @@ as well as an overview of some values:</p>
 ##  $ stroke           : int  1 1 1 1 1 1 1 1 1 1 ...</code></pre>
 <p>Most of the variables are categorical. We convert them into
 factor.</p>
-<pre class="r"><code>dat &lt;- dat[, -1]
+<pre class="r"><code>dat &lt;- dat[, -1] ### remove the first id column
+
+dat &lt;- dat[dat$gender!=&quot;Other&quot;,]
 
 dat[, -c(2, 8, 9)] &lt;- lapply(dat[, -c(2, 8, 9)], as.factor)
   
 dat$bmi &lt;- as.numeric(dat$bmi)</code></pre>
 <p>Let us have a glimpse of the data:</p>
-<pre class="r"><code>head(dat)</code></pre>
-<pre><code>##   gender age hypertension heart_disease ever_married     work_type
-## 1   Male  67            0             1          Yes       Private
-## 2 Female  61            0             0          Yes Self-employed
-## 3   Male  80            0             1          Yes       Private
-## 4 Female  49            0             0          Yes       Private
-## 5 Female  79            1             0          Yes Self-employed
-## 6   Male  81            0             0          Yes       Private
-##   Residence_type avg_glucose_level  bmi  smoking_status stroke
-## 1          Urban            228.69 36.6 formerly smoked      1
-## 2          Rural            202.21   NA    never smoked      1
-## 3          Rural            105.92 32.5    never smoked      1
-## 4          Urban            171.23 34.4          smokes      1
-## 5          Rural            174.12 24.0    never smoked      1
-## 6          Urban            186.21 29.0 formerly smoked      1</code></pre>
+<pre class="r"><code>kable(head(dat), &quot;html&quot;) %&gt;%
+  kable_styling(font_size = 12) %&gt;%
+  scroll_box(width = &quot;100%&quot;, height = &quot;300px&quot;)</code></pre>
+<div
+style="border: 1px solid #ddd; padding: 0px; overflow-y: scroll; height:300px; overflow-x: scroll; width:100%; ">
+<table class="table" style="font-size: 12px; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+gender
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+age
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+hypertension
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+heart_disease
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+ever_married
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+work_type
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+Residence_type
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+avg_glucose_level
+</th>
+<th style="text-align:right;position: sticky; top:0; background-color: #FFFFFF;">
+bmi
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+smoking_status
+</th>
+<th style="text-align:left;position: sticky; top:0; background-color: #FFFFFF;">
+stroke
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Male
+</td>
+<td style="text-align:right;">
+67
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Private
+</td>
+<td style="text-align:left;">
+Urban
+</td>
+<td style="text-align:right;">
+228.69
+</td>
+<td style="text-align:right;">
+36.6
+</td>
+<td style="text-align:left;">
+formerly smoked
+</td>
+<td style="text-align:left;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Female
+</td>
+<td style="text-align:right;">
+61
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Self-employed
+</td>
+<td style="text-align:left;">
+Rural
+</td>
+<td style="text-align:right;">
+202.21
+</td>
+<td style="text-align:right;">
+NA
+</td>
+<td style="text-align:left;">
+never smoked
+</td>
+<td style="text-align:left;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Male
+</td>
+<td style="text-align:right;">
+80
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Private
+</td>
+<td style="text-align:left;">
+Rural
+</td>
+<td style="text-align:right;">
+105.92
+</td>
+<td style="text-align:right;">
+32.5
+</td>
+<td style="text-align:left;">
+never smoked
+</td>
+<td style="text-align:left;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Female
+</td>
+<td style="text-align:right;">
+49
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Private
+</td>
+<td style="text-align:left;">
+Urban
+</td>
+<td style="text-align:right;">
+171.23
+</td>
+<td style="text-align:right;">
+34.4
+</td>
+<td style="text-align:left;">
+smokes
+</td>
+<td style="text-align:left;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Female
+</td>
+<td style="text-align:right;">
+79
+</td>
+<td style="text-align:left;">
+1
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Self-employed
+</td>
+<td style="text-align:left;">
+Rural
+</td>
+<td style="text-align:right;">
+174.12
+</td>
+<td style="text-align:right;">
+24.0
+</td>
+<td style="text-align:left;">
+never smoked
+</td>
+<td style="text-align:left;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Male
+</td>
+<td style="text-align:right;">
+81
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:left;">
+Yes
+</td>
+<td style="text-align:left;">
+Private
+</td>
+<td style="text-align:left;">
+Urban
+</td>
+<td style="text-align:right;">
+186.21
+</td>
+<td style="text-align:right;">
+29.0
+</td>
+<td style="text-align:left;">
+formerly smoked
+</td>
+<td style="text-align:left;">
+1
+</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 <div id="analysis-of-missing-values" class="section level3">
-<h3><strong>Analysis of missing values</strong></h3>
-<p>To analyze the missing values we use the naniar package.</p>
+<h3><strong>Analysis of Missing Values</strong></h3>
+<p>To visualize the distribution of missing values we use the naniar
+package.</p>
 <p>The following plot shows that 4 percent of bmi values, or 201 of
 observations have bmi values missing.</p>
 <pre class="r"><code>vis_miss(dat)</code></pre>
@@ -302,8 +549,10 @@ association between smoking status and marriage status, smoking status
 and work type. This is likely due to the age of individuals as a
 confounding variable. Most of the associations, however, are weak.</p>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<p>What about continuous variables: age, average glucose level, and body
-mass index?</p>
+<div id="distribution-of-continuous-variables" class="section level4">
+<h4><strong>Distribution of Continuous Variables</strong></h4>
+<p>What about the continuous variables: age, average glucose level, and
+body mass index?</p>
 <p>Half of the individuals have an average glucose level above the
 normal 100 mg/dL threshold, indicating a substantial proportion may be
 experiencing hyperglycemia. In particular, there is a cluster of
@@ -315,7 +564,7 @@ The distribution of age is almost uniform, it includes all ages from
 infants to elderly.</p>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/hist-plots-1.png" width="960" /></p>
 <p>The distribution of average glucose level among individuals who
-experienced a stroke is visibly multimodal, with a secondary peak above
+experienced stroke is visibly multimodal, with a secondary peak above
 200. The median average glucose level among stroke cases is around 105.
 <strong>While individuals with average glucose levels above ~ 200mg/dL
 constitute a small portion of observations, they account for
@@ -400,16 +649,15 @@ p2 &lt;- ggplot(dat, aes(x=age, fill=stroke)) +  geom_density(alpha=0.4)+
 grid.arrange(p1, p2, ncol=2)</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/age-stroke-plot-1.png" width="864" /></p>
 <p>Next, we analyze pairwise relationships between these variables split
-based on the stroke variable (highlighted as yellow or orange).
-<strong>We see that individual with highly elevated glucose level are
-older individuals. We see that for stroke individuals, there is a
-negative correlation between the age and the body mass index. This
-association is positive for non-stroke cases. This is because the
-majority of strokes happens above the age of 70, after which the body
-mass index starts to decline. The association between the average
-glucose level and body mass index is higher in stroke individuals, than
-it is in non-stroke individuals, this is due to the positive
-relationship of obesity, high glucose level and stroke.</strong></p>
+based on the stroke variable (highlighted as yellow or orange). We see
+that individual with highly elevated glucose level are older individuals
+and for stroke individuals, there is a negative correlation between the
+age and the body mass index. This association is positive for non-stroke
+cases. This is because the majority of strokes happens above the age of
+70, after which the body mass index starts to decline. The association
+between the average glucose level and body mass index is higher in
+stroke individuals, than it is in non-stroke individuals, this is due to
+the positive relationship of obesity, high glucose level and stroke.</p>
 <pre class="r"><code>ggpairs(dat, columns=c(2, 8, 9), aes(color=stroke, alpha=0.3),
         lower=list(continuous=&quot;smooth&quot;), diag=list(continuous=&quot;densityDiag&quot;))+
   scale_fill_brewer(palette = &quot;Set3&quot;) +
@@ -502,12 +750,13 @@ ggplot(stroke_hypert_heartd, aes(x = hyp_hd, y = age, fill = stroke)) +
     theme(plot.title = element_text(hjust = 0.5, size = 18))</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/pairwise_age_heartd_hypert-1.png" width="1440" /></p>
 </div>
+</div>
 <div id="epidemiological-analysis" class="section level3">
-<h3><strong>Epidemiological analysis</strong></h3>
-<p>In this section, we will do some statistical analysis of association
+<h3><strong>Epidemiological Analysis</strong></h3>
+<p>In this section, we do some statistical analysis of association
 between variables.</p>
 <div id="odds-ratio" class="section level4">
-<h4><strong>Odds ratio</strong></h4>
+<h4><strong>Odds Ratio</strong></h4>
 <p>To compute the odds ratio we use <strong>epitools package</strong>.
 The outcome of interest is stroke, and the exposures are: hypertension,
 heart disease, average glucose level, age and gender.</p>
@@ -520,21 +769,21 @@ oddsratio(tbl_hypertension)</code></pre>
 <pre><code>## $data
 ##        
 ##            0   1 Total
-##   0     4429 432  4861
+##   0     4428 432  4860
 ##   1      183  66   249
-##   Total 4612 498  5110
+##   Total 4611 498  5109
 ## 
 ## $measure
 ##    odds ratio with 95% C.I.
 ##     estimate    lower    upper
 ##   0 1.000000       NA       NA
-##   1 3.701246 2.729655 4.964923
+##   1 3.700411 2.729038 4.963795
 ## 
 ## $p.value
 ##    two-sided
 ##      midp.exact fisher.exact   chi.square
 ##   0          NA           NA           NA
-##   1 5.77316e-15 4.549182e-15 6.068123e-20
+##   1 5.77316e-15 4.592824e-15 6.169579e-20
 ## 
 ## $correction
 ## [1] FALSE
@@ -550,21 +799,21 @@ oddsratio(tbl_heart_disease)</code></pre>
 <pre><code>## $data
 ##        
 ##            0   1 Total
-##   0     4632 229  4861
+##   0     4631 229  4860
 ##   1      202  47   249
-##   Total 4834 276  5110
+##   Total 4833 276  5109
 ## 
 ## $measure
 ##    odds ratio with 95% C.I.
 ##     estimate    lower    upper
 ##   0 1.000000       NA       NA
-##   1 4.714026 3.309098 6.601552
+##   1 4.713009 3.308383 6.600126
 ## 
 ## $p.value
 ##    two-sided
-##       midp.exact fisher.exact  chi.square
-##   0           NA           NA          NA
-##   1 8.881784e-15 7.283093e-15 5.20011e-22
+##       midp.exact fisher.exact   chi.square
+##   0           NA           NA           NA
+##   1 8.881784e-15  7.33664e-15 5.281727e-22
 ## 
 ## $correction
 ## [1] FALSE
@@ -583,21 +832,21 @@ oddsratio(tbl_agl)</code></pre>
 <pre><code>## $data
 ##        
 ##         (0,180] (180,272] Total
-##   0        4357       504  4861
+##   0        4356       504  4860
 ##   1         170        79   249
-##   Total    4527       583  5110
+##   Total    4526       583  5109
 ## 
 ## $measure
 ##    odds ratio with 95% C.I.
-##     estimate    lower   upper
-##   0 1.000000       NA      NA
-##   1 4.019523 3.017215 5.31477
+##     estimate    lower    upper
+##   0 1.000000       NA       NA
+##   1 4.018601 3.016521 5.313551
 ## 
 ## $p.value
 ##    two-sided
 ##     midp.exact fisher.exact   chi.square
 ##   0         NA           NA           NA
-##   1          0  7.34523e-19 4.660299e-25
+##   1          0 7.432068e-19 4.756879e-25
 ## 
 ## $correction
 ## [1] FALSE
@@ -619,21 +868,21 @@ oddsratio(tbl_bmi)</code></pre>
 <pre><code>## $data
 ##        
 ##         (0,25] (25,97.6] Total
-##   0       1569      3131  4700
+##   0       1568      3131  4699
 ##   1         38       171   209
-##   Total   1607      3302  4909
+##   Total   1606      3302  4908
 ## 
 ## $measure
 ##    odds ratio with 95% C.I.
 ##     estimate    lower    upper
-##   0  1.00000       NA       NA
-##   1  2.24731 1.590984 3.257228
+##   0 1.000000       NA       NA
+##   1 2.245878 1.589959 3.255214
 ## 
 ## $p.value
 ##    two-sided
 ##       midp.exact fisher.exact   chi.square
 ##   0           NA           NA           NA
-##   1 1.680562e-06 2.447681e-06 4.595335e-06
+##   1 1.714896e-06 2.443748e-06 4.679649e-06
 ## 
 ## $correction
 ## [1] FALSE
@@ -652,21 +901,21 @@ oddsratio(tbl_age)</code></pre>
 <pre><code>## $data
 ##        
 ##            0    1 Total
-##   0     3734 1127  4861
+##   0     3733 1127  4860
 ##   1       72  177   249
-##   Total 3806 1304  5110
+##   Total 3805 1304  5109
 ## 
 ## $measure
 ##    odds ratio with 95% C.I.
 ##     estimate    lower    upper
-##   0 1.000000       NA       NA
-##   1 8.130197 6.159177 10.83745
+##   0  1.00000       NA       NA
+##   1  8.12802 6.157525 10.83447
 ## 
 ## $p.value
 ##    two-sided
 ##     midp.exact fisher.exact   chi.square
 ##   0         NA           NA           NA
-##   1          0 3.741383e-54 3.822487e-64
+##   1          0 3.858771e-54 4.012304e-64
 ## 
 ## $correction
 ## [1] FALSE
@@ -686,22 +935,22 @@ summary(lr_model)</code></pre>
 ## 
 ## Coefficients:
 ##                 Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)    -7.143430   0.335705 -21.279   &lt;2e-16 ***
-## heart_disease1  0.423317   0.185405   2.283   0.0224 *  
-## age             0.072429   0.005016  14.440   &lt;2e-16 ***
+## (Intercept)    -7.143068   0.335720 -21.277   &lt;2e-16 ***
+## heart_disease1  0.423328   0.185404   2.283   0.0224 *  
+## age             0.072424   0.005016  14.438   &lt;2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
-##     Null deviance: 1990.4  on 5109  degrees of freedom
-## Residual deviance: 1611.3  on 5107  degrees of freedom
+##     Null deviance: 1990.3  on 5108  degrees of freedom
+## Residual deviance: 1611.3  on 5106  degrees of freedom
 ## AIC: 1617.3
 ## 
 ## Number of Fisher Scoring iterations: 7</code></pre>
 <pre class="r"><code>exp(lr_model$coefficients)</code></pre>
 <pre><code>##    (Intercept) heart_disease1            age 
-##   0.0007900377   1.5270177901   1.0751169789</code></pre>
+##   0.0007903236   1.5270352721   1.0751114927</code></pre>
 <p><strong>After adjusting for age, the odds ratio for stroke in
 individuals with heart disease decreased from 4.71 to 1.53, indicating
 substantial confounding by age. This suggests that age is a confounding
@@ -720,22 +969,22 @@ summary(lr_model)</code></pre>
 ## 
 ## Coefficients:
 ##                Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)   -7.186714   0.335748 -21.405  &lt; 2e-16 ***
-## hypertension1  0.467334   0.160231   2.917  0.00354 ** 
-## age            0.072519   0.004994  14.522  &lt; 2e-16 ***
+## (Intercept)   -7.186365   0.335763 -21.403  &lt; 2e-16 ***
+## hypertension1  0.467328   0.160230   2.917  0.00354 ** 
+## age            0.072514   0.004994  14.520  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
-##     Null deviance: 1990.4  on 5109  degrees of freedom
-## Residual deviance: 1608.2  on 5107  degrees of freedom
+##     Null deviance: 1990.3  on 5108  degrees of freedom
+## Residual deviance: 1608.2  on 5106  degrees of freedom
 ## AIC: 1614.2
 ## 
 ## Number of Fisher Scoring iterations: 7</code></pre>
 <pre class="r"><code>exp(lr_model$coefficients)</code></pre>
 <pre><code>##   (Intercept) hypertension1           age 
-##  0.0007565708  1.5957347018  1.0752134553</code></pre>
+##  0.0007568349  1.5957249687  1.0752082175</code></pre>
 <p>Now, how about the gender? <strong>There is no association between
 gender and the occurrence of stroke.</strong></p>
 <pre class="r"><code>tbl_gender &lt;- table(dat$stroke, dat$gender)
@@ -743,10 +992,10 @@ gender and the occurrence of stroke.</strong></p>
 oddsratio(tbl_gender)</code></pre>
 <pre><code>## $data
 ##        
-##         Female Male Other Total
-##   0       2853 2007     1  4861
-##   1        141  108     0   249
-##   Total   2994 2115     1  5110
+##         Female Male Total
+##   0       2853 2007  4860
+##   1        141  108   249
+##   Total   2994 2115  5109
 ## 
 ## $measure
 ##    odds ratio with 95% C.I.
@@ -758,7 +1007,7 @@ oddsratio(tbl_gender)</code></pre>
 ##    two-sided
 ##     midp.exact fisher.exact chi.square
 ##   0         NA           NA         NA
-##   1  0.5160089    0.5746131  0.7895491
+##   1  0.5160089     0.552823  0.5163019
 ## 
 ## $correction
 ## [1] FALSE
@@ -767,7 +1016,7 @@ oddsratio(tbl_gender)</code></pre>
 ## [1] &quot;median-unbiased estimate &amp; mid-p exact CI&quot;</code></pre>
 </div>
 <div id="attributable-risk" class="section level4">
-<h4><strong>Attributable risk</strong></h4>
+<h4><strong>Attributable Risk</strong></h4>
 <p>Since we are dealing with a cross-sectional data and risk is a
 time-related concept, in what follows we talk about the prevalence of
 disease. What percentage of the stroke cases in the hypertension
@@ -841,30 +1090,29 @@ summary(lr_model)</code></pre>
 ## 
 ## Coefficients:
 ##                              Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)                -6.759e+00  7.527e-01  -8.980  &lt; 2e-16 ***
-## age                         7.464e-02  5.729e-03  13.029  &lt; 2e-16 ***
-## genderMale                  1.244e-02  1.418e-01   0.088 0.930114    
-## genderOther                -1.054e+01  1.455e+03  -0.007 0.994221    
-## hypertension1               4.050e-01  1.644e-01   2.463 0.013779 *  
-## heart_disease1              2.791e-01  1.911e-01   1.461 0.144040    
-## ever_marriedYes            -1.833e-01  2.254e-01  -0.814 0.415902    
-## work_typeGovt_job          -9.298e-01  8.210e-01  -1.133 0.257393    
-## work_typeNever_worked      -1.032e+01  3.095e+02  -0.033 0.973387    
-## work_typePrivate           -7.877e-01  8.051e-01  -0.978 0.327907    
-## work_typeSelf-employed     -1.165e+00  8.264e-01  -1.410 0.158683    
-## Residence_typeUrban         8.334e-02  1.383e-01   0.602 0.546897    
-## avg_glucose_level           4.053e-03  1.174e-03   3.451 0.000558 ***
-## smoking_statusnever smoked -2.069e-01  1.759e-01  -1.176 0.239524    
-## smoking_statussmokes        1.121e-01  2.153e-01   0.521 0.602553    
-## smoking_statusUnknown      -7.298e-02  2.084e-01  -0.350 0.726145    
+## (Intercept)                 -6.759375   0.752742  -8.980  &lt; 2e-16 ***
+## age                          0.074639   0.005729  13.029  &lt; 2e-16 ***
+## genderMale                   0.012440   0.141848   0.088 0.930114    
+## hypertension1                0.404983   0.164428   2.463 0.013779 *  
+## heart_disease1               0.279113   0.191054   1.461 0.144040    
+## ever_marriedYes             -0.183344   0.225363  -0.814 0.415902    
+## work_typeGovt_job           -0.929849   0.821005  -1.133 0.257393    
+## work_typeNever_worked      -10.323844 309.466716  -0.033 0.973387    
+## work_typePrivate            -0.787666   0.805106  -0.978 0.327907    
+## work_typeSelf-employed      -1.164861   0.826428  -1.410 0.158683    
+## Residence_typeUrban          0.083337   0.138338   0.602 0.546897    
+## avg_glucose_level            0.004053   0.001174   3.451 0.000558 ***
+## smoking_statusnever smoked  -0.206935   0.175938  -1.176 0.239524    
+## smoking_statussmokes         0.112117   0.215307   0.521 0.602553    
+## smoking_statusUnknown       -0.072984   0.208372  -0.350 0.726145    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
-##     Null deviance: 1990.4  on 5109  degrees of freedom
+##     Null deviance: 1990.3  on 5108  degrees of freedom
 ## Residual deviance: 1581.2  on 5094  degrees of freedom
-## AIC: 1613.2
+## AIC: 1611.2
 ## 
 ## Number of Fisher Scoring iterations: 14</code></pre>
 <p>To interpret the effect of age, hypertension, and average glucose
@@ -888,9 +1136,8 @@ exp(coeffs_sign)</code></pre>
 <div id="task-three-evaluate-and-select-prediction-models"
 class="section level1">
 <h1>Task Three: Evaluate and select prediction models</h1>
-<div id="first-thing-first-what-evaluation-measures"
-class="section level3">
-<h3><strong>First thing first: What evaluation measures?</strong></h3>
+<div id="evaluation-measures" class="section level3">
+<h3><strong>Evaluation Measures</strong></h3>
 <p>This is a problem with high class imbalance: only around 5 percent of
 observations are stroke cases. Thus it is important to choose relevant
 evaluation measures. Without any learning, without even considering any
@@ -898,20 +1145,20 @@ input variables, predicting no stroke would achieve a very high accuracy
 result. Thus we concentrate on <strong>sensitivity</strong> and
 <strong>specificity</strong> first. <strong>Sensitivity measures the
 proportion of individuals correctly identified as stroke cases among
-those who actually have a stroke, and specificity measures the
-proportion of individuals correctly identified as healthy among those
-who are actually healthy.</strong> These measures take values between O
-and 1. Now, if all individuals are predicted as non-stroke ones, then
-the specificity will be 1 since there is no false positives. However,
+those who actually have stroke, and specificity measures the proportion
+of individuals correctly identified as healthy among those who are
+actually healthy.</strong> These measures take values between O and 1.
+Now, if all individuals are predicted as non-stroke ones, then the
+specificity will be 1 since there is no false positives. However,
 sensitivity in this case will be 0, since 0 stroke case, i.e., 0 true
 positive is identified.</p>
 <p>Sensitivity is also known as recall. Precision computes the fraction
-of true positives over the sum of true and false positives. The
-<strong>F1-measure</strong> is the harmonic mean of precision and
-recall, it balances precision and recall. But notice that if the
-specificity is 1 and the sensitivity is 0, then the precision is
-undefined, since there is neither true positives or false positives
-predicted. Thus, F1 measure is not defined.</p>
+of true positives in all positively predicted outputs (i.e., true and
+false positives). The <strong>F1-measure</strong> is the harmonic mean
+of precision and recall, it balances precision and recall. But notice
+that if the specificity is 1 and the sensitivity is 0, then the
+precision is undefined, since there is neither true positives or false
+positives predicted. Thus, F1 measure is not defined.</p>
 <p>Next, we consider the <strong>area under the ROC curve</strong>. This
 curve draws sensitivity against false positive rate (1-specificity) at
 every cut-off threshold level for predicted probability values, and the
@@ -929,7 +1176,7 @@ Matthews coefficient. Our strategy is based on the Youden’s index, i.e.,
 the threshold that maximizes sensitivity + specificity - 1.</p>
 </div>
 <div id="missing-values-data-splitting" class="section level3">
-<h3><strong>Missing values, data splitting</strong></h3>
+<h3><strong>Missing Values, Data Splitting</strong></h3>
 <p>We can impute the missing values using the k-nearest neighbour
 method. It means that the individuals having similar characteristics
 will have similar body mass index. But it is questionable from precision
@@ -943,16 +1190,19 @@ cases is similar across these splits.</strong> In what follow, we use
 set.seed to ensure reproducibility.</p>
 <pre class="r"><code>set.seed(123)
 
-dat_split &lt;- initial_split(dat, prop = 3/4, strata = stroke)
+split1 &lt;- initial_split(dat, prop = 0.7, strata = stroke)
+dat_train &lt;- training(split1)
+dat_cv &lt;- vfold_cv(dat_train)
 
-dat_train &lt;- training(dat_split)
+temp &lt;- testing(split1)
 
-dat_test &lt;- testing(dat_split)
-                      
-dat_cv &lt;- vfold_cv(dat_train)</code></pre>
+split2 &lt;- initial_split(temp, prop = 0.5, strata = stroke)
+dat_val &lt;- training(split2)
+dat_test &lt;- testing(split2)
+ground_truth &lt;- factor(dat_test$stroke, levels = c(1, 0))</code></pre>
 </div>
 <div id="predictive-modeling" class="section level3">
-<h3><strong>Predictive modeling</strong></h3>
+<h3><strong>Predictive Modeling</strong></h3>
 <p>We use logistic regression, also models of higher capacity, capable
 of learning non-linear decision boundaries, such as random forest and an
 improved version of the gradient boosting method, extreme gradient
@@ -966,14 +1216,11 @@ in the recipe function. The number of synthetic samples generated affect
 sensitivity and specificity: higher number of synthetic samples will
 improve sensitivity, and degrade specificity.</p>
 <p>We use parsnip package of tidymodels to train logistic regression
-model and random forest. There is no implementation of extreme gradient
-boosting, xgb, in tidymodels, so we use xgboost package. We do a grid
-search for hyperparameter tuning.</p>
+model, random forest and xgboost and we perform grid search for
+hyperparameter tuning.</p>
 <div id="logistic-regression" class="section level4">
 <h4><strong>Logistic regression</strong></h4>
-<pre class="r"><code>ground_truth &lt;- factor(dat_test$stroke, levels = c(1, 0)) # set the ground truth
-
-dat_recipe &lt;- recipe(stroke ~ ., data = dat_train) %&gt;% step_impute_knn(all_predictors())
+<pre class="r"><code>dat_recipe &lt;- recipe(stroke ~ ., data = dat_train) %&gt;% step_impute_knn(all_predictors())
 
 lr_model &lt;- logistic_reg() %&gt;%  set_engine(&quot;glm&quot;) %&gt;% set_mode(&quot;classification&quot;) 
 
@@ -981,18 +1228,26 @@ lr_workflow &lt;- workflow() %&gt;% add_model(lr_model) %&gt;% add_recipe(dat_re
 
 lr_fit &lt;- fit(lr_workflow, data = dat_train)
 
-lr_fit_extracted &lt;- extract_fit_engine(lr_fit)
+###------threshold selection
+
+val_probs &lt;- predict(lr_fit, dat_val, type = &quot;prob&quot;)$.pred_1
+val_truth &lt;- factor(dat_val$stroke, levels = c(1, 0))
+
+threshold_info &lt;- best_threshold(val_truth, val_probs)</code></pre>
+<pre><code>## Setting levels: control = 1, case = 0</code></pre>
+<pre><code>## Setting direction: controls &gt; cases</code></pre>
+<pre class="r"><code>thr &lt;- threshold_info$threshold
+
+###------apply to test set
 
 lr_probs1 &lt;- predict(lr_fit, dat_test, type = &quot;prob&quot;)
 
-lr_result1 &lt;- evaluate_model_fit(ground_truth, lr_probs1$.pred_1)</code></pre>
-<pre><code>## Setting levels: control = 1, case = 0</code></pre>
-<pre><code>## Setting direction: controls &gt; cases</code></pre>
+lr_result1 &lt;- evaluate_model_fit(thr, ground_truth, lr_probs1$.pred_1)</code></pre>
 <p>and train with SMOTE:</p>
 <pre class="r"><code>dat_smote_recipe &lt;- recipe(stroke ~ ., data = dat_train) %&gt;%
   step_impute_knn(all_predictors()) %&gt;%
   step_dummy(all_nominal_predictors()) %&gt;% 
-  step_smote(stroke, over_ratio = 0.5)
+  step_smote(stroke, over_ratio = 1)
 
 lr_model2 &lt;- logistic_reg() %&gt;%  set_engine(&quot;glm&quot;) %&gt;% set_mode(&quot;classification&quot;) 
 
@@ -1000,102 +1255,118 @@ lr_workflow2 &lt;- workflow() %&gt;% add_model(lr_model2) %&gt;% add_recipe(dat_
 
 lr_fit2 &lt;- fit(lr_workflow2, data = dat_train)
 
-lr_fit_extracted2 &lt;- extract_fit_engine(lr_fit2)
+###------threshold selection
+
+val_probs &lt;- predict(lr_fit2, dat_val, type = &quot;prob&quot;)$.pred_1
+val_truth &lt;- factor(dat_val$stroke, levels = c(1, 0))
+
+threshold_info &lt;- best_threshold(val_truth, val_probs)</code></pre>
+<pre><code>## Setting levels: control = 1, case = 0</code></pre>
+<pre><code>## Setting direction: controls &gt; cases</code></pre>
+<pre class="r"><code>thr &lt;- threshold_info$threshold
+
+###------apply to test set
 
 lr_probs2 &lt;- predict(lr_fit2, dat_test, type = &quot;prob&quot;)
-
-lr_result2 &lt;- evaluate_model_fit(ground_truth, lr_probs2$.pred_1)</code></pre>
-<pre><code>## Setting levels: control = 1, case = 0</code></pre>
-<pre><code>## Setting direction: controls &gt; cases</code></pre>
+lr_result2 &lt;- evaluate_model_fit(thr, ground_truth, lr_probs2$.pred_1)</code></pre>
 </div>
 <div id="random-forest" class="section level4">
-<h4><strong>Random forest</strong></h4>
-<pre class="r"><code>rf_model &lt;- rand_forest() %&gt;% set_args(mtry = tune()) %&gt;%
-  set_engine(&quot;ranger&quot;, importance = &quot;impurity&quot;) %&gt;%
-  set_mode(&quot;classification&quot;) 
-
+<h4><strong>Random Forest</strong></h4>
+<pre class="r"><code>rf_model &lt;- rand_forest(
+  mtry = tune(),    # Number of predictors sampled at each split
+  trees = tune(),   # Number of trees in the forest
+  min_n = tune()    # Minimum number of data points in a node to proceed with a split
+) %&gt;% set_engine(&quot;ranger&quot;) %&gt;% set_mode(&quot;classification&quot;)
 
 rf_workflow &lt;- workflow() %&gt;%
-  add_recipe(dat_smote_recipe) %&gt;%
+  add_recipe(dat_recipe) %&gt;%
   add_model(rf_model)
 
-rf_grid &lt;- expand.grid(mtry = c(2, 3, 4, 5))
-
-rf_tune_results &lt;- rf_workflow %&gt;% tune_grid(resamples = dat_cv, grid = rf_grid, metrics = metric_set(roc_auc))
-
-rf_tune_results %&gt;%  collect_metrics()</code></pre>
-<pre><code>## # A tibble: 4 × 7
-##    mtry .metric .estimator  mean     n std_err .config             
-##   &lt;dbl&gt; &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;               
-## 1     2 roc_auc binary     0.819    10 0.00867 Preprocessor1_Model1
-## 2     3 roc_auc binary     0.817    10 0.0109  Preprocessor1_Model2
-## 3     4 roc_auc binary     0.809    10 0.0116  Preprocessor1_Model3
-## 4     5 roc_auc binary     0.808    10 0.0129  Preprocessor1_Model4</code></pre>
-<pre class="r"><code>param_final &lt;- rf_tune_results %&gt;% select_best(metric = &quot;roc_auc&quot;)
-
-rf_workflow &lt;- rf_workflow %&gt;% finalize_workflow(param_final)
-
-rf_fit &lt;- rf_workflow %&gt;% last_fit(dat_split)
-
-#test_performance &lt;- rf_fit %&gt;% collect_metrics()
-
-rf_probs &lt;- as.data.frame(rf_fit$.predictions)$.pred_1
-
-rf_result &lt;- evaluate_model_fit(ground_truth, rf_probs)</code></pre>
-<pre><code>## Setting levels: control = 1, case = 0</code></pre>
-<pre><code>## Setting direction: controls &gt; cases</code></pre>
-</div>
-<div id="extreme-gradient-boosting" class="section level4">
-<h4><strong>Extreme gradient boosting</strong></h4>
-<pre class="r"><code>dat_smote_recipe &lt;- dat_smote_recipe %&gt;% prep()
-
-X_train &lt;- dat_train %&gt;% select(-stroke)
-X_test &lt;- dat_test %&gt;% select(-stroke)
-
-X_train &lt;- bake(dat_smote_recipe, X_train)
-X_test &lt;- bake(dat_smote_recipe, X_test)
-
-y_train &lt;- as.numeric(dat_train$stroke)-1
-y_test  &lt;- as.numeric(dat_test$stroke)-1
-
-
-X_train_matrix &lt;- as.matrix(X_train)
-X_test_matrix &lt;- as.matrix(X_test)
-
-dtrain &lt;- xgb.DMatrix(data = X_train_matrix, label = y_train)
-dtest  &lt;- xgb.DMatrix(data = X_test_matrix, label = y_test)
-
-
-params_list &lt;- expand.grid(
-  eta = c(0.01, 0.1, 0.3),
-  max_depth = c(3, 6, 9, 12),
-  subsample = c(0.3, 0.5, 0.7, 0.9),
-  colsample_bytree = c(0.2, 0.5, 0.8)
+rf_grid &lt;- expand.grid(
+  mtry = c(2, 3, 5, 7),
+  trees = c(100, 300),
+  min_n = c(5, 10)
 )
 
-cv_results &lt;- xgb_tune(params_list, dtrain, 100)
+rf_tune_results &lt;- rf_workflow %&gt;% 
+    tune_grid(resamples = dat_cv, 
+              grid = rf_grid, 
+              metrics = metric_set(roc_auc)
+              )
 
-cv_summary &lt;- rbindlist(cv_results)
+param_final &lt;- rf_tune_results %&gt;% select_best(metric = &quot;roc_auc&quot;)
 
-best_params &lt;- cv_summary[which.max(auc)]
+rf_workflow_final &lt;- rf_workflow %&gt;% finalize_workflow(param_final)
 
-### we train xgb with the best hyperparameter configuration on the entire training set.
-xgb_final_model &lt;- xgb.train(
-  params = as.list(best_params),
-  data = dtrain,
-  nrounds = best_params$best_iteration,  
-  watchlist = list(train = dtrain),
-  verbose = 0
-  )</code></pre>
-<pre><code>## [12:33:34] WARNING: src/learner.cc:767: 
-## Parameters: { &quot;auc&quot;, &quot;best_iteration&quot; } are not used.</code></pre>
-<pre class="r"><code>xgb_probs &lt;- predict(xgb_final_model, dtest)
+rf_fit &lt;- rf_workflow_final %&gt;% fit(data = dat_train)
 
-xgb_result &lt;- evaluate_model_fit(ground_truth, xgb_probs)</code></pre>
+###-------------Threshold selection on validation set
+
+rf_probs_val &lt;- predict(rf_fit, dat_val, type = &quot;prob&quot;)$.pred_1
+
+threshold_info &lt;- best_threshold(val_truth, rf_probs_val)</code></pre>
+<pre><code>## Setting levels: control = 1, case = 0</code></pre>
+<pre><code>## Setting direction: controls &gt; cases</code></pre>
+<pre class="r"><code>thresh&lt;- threshold_info$threshold
+
+###--------------Apply to test data
+
+rf_probs_test &lt;- predict(rf_fit, dat_test, type = &quot;prob&quot;)$.pred_1
+
+rf_result &lt;- evaluate_model_fit(thresh, ground_truth, rf_probs_test)</code></pre>
+</div>
+<div id="extreme-gradient-boosting" class="section level4">
+<h4><strong>Extreme Gradient Boosting</strong></h4>
+<pre class="r"><code>xgb_spec &lt;- boost_tree(
+  tree_depth = tune(),         # Maximum tree depth
+  learn_rate = tune(),         # Learning rate (eta)
+) %&gt;% set_mode(&quot;classification&quot;) %&gt;%  set_engine(&quot;xgboost&quot;, eval_metric = &quot;auc&quot;)       
+
+wflow &lt;- workflow() %&gt;% add_recipe(dat_smote_recipe) %&gt;% add_model(xgb_spec)
+
+# Here we use grid_regular() from the dials package to create a regular grid.
+grid_vals &lt;- grid_regular(
+  tree_depth(range = c(3, 9)),
+  learn_rate(range = c(0.01, 0.3)),
+  levels = 3
+)
+
+tune_res &lt;- tune_grid(
+  wflow,
+  resamples = dat_cv,
+  grid = grid_vals,
+  metrics = metric_set(roc_auc)
+)
+
+# Collect and inspect the results.
+#collect_metrics(tune_res)
+
+# Select the best hyperparameter configuration based on auc.
+best_res &lt;- select_best(tune_res, metric=&quot;roc_auc&quot;)
+
+# Finalize the workflow with the best parameters.
+final_wflow &lt;- finalize_workflow(wflow, best_res)
+
+xgb_fit &lt;- final_wflow %&gt;% fit(data = dat_train)
+
+###-------------------Threshold selection
+
+xgb_probs_val &lt;- predict(xgb_fit, dat_val, type = &quot;prob&quot;)$.pred_1
+
+threshold_info &lt;- best_threshold(val_truth, xgb_probs_val)</code></pre>
+<pre><code>## Setting levels: control = 1, case = 0</code></pre>
+<pre><code>## Setting direction: controls &gt; cases</code></pre>
+<pre class="r"><code>thresh &lt;- threshold_info$threshold
+
+###-----------------Apply to test data
+
+xgb_probs_test &lt;- predict(xgb_fit, dat_test, type = &quot;prob&quot;)$.pred_1
+
+xgb_result &lt;- evaluate_model_fit(thresh, ground_truth, xgb_probs_test)</code></pre>
 </div>
 </div>
 <div id="performance-comparison-of-models" class="section level3">
-<h3><strong>Performance comparison of models</strong></h3>
+<h3><strong>Performance Comparison of Models</strong></h3>
 <p><strong>According to Matthiews correlation coefficient, all methods
 perform weakly (better than random)</strong>. Their performances are
 comparable, but logistic regression with smote stands out in terms of
@@ -1126,26 +1397,11 @@ ggplot(results_long, aes(x = Metric, y = Value, fill = Model)) +
   theme_minimal()+     
   theme(plot.title = element_text(hjust = 0.5, size = 16))</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/unnamed-chunk-14-1.png" width="960" /></p>
-<pre class="r"><code>p1 &lt;- plot_roc(data.frame(ground_truth, probs=lr_probs2$.pred_1), &quot;Logistic Regression&quot;)
-
-p2 &lt;-  plot_roc(data.frame(ground_truth, probs=rf_probs), &quot;Random Forest&quot;)
-
-p3 &lt;-  plot_roc(data.frame(ground_truth, probs=xgb_probs), &quot;XGB&quot;)
-
-grid.arrange(p1, p2, p3, ncol = 4)</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/unnamed-chunk-15-1.png" width="2400" /></p>
 <p>From the confusion matrix, we see that a lot of individuals are
 predicted as the stroke case, since we chose lower cut-off threshold
 from the ROC curve. Logistic regression has smaller number of false
 positives.</p>
-<pre class="r"><code>p1 &lt;- plot_confusion_matrix(ground_truth, lr_result2$pred_class, round(lr_result2$matcc, 2), &quot;Logistic regression&quot;)
-
-p2 &lt;- plot_confusion_matrix(ground_truth, rf_result$pred_class, round(rf_result$matcc, 2), &quot;Random forest&quot;)
-
-p3 &lt;- plot_confusion_matrix(ground_truth, xgb_result$pred_class, round(xgb_result$matcc, 2), &quot;XGB&quot;)
-
-
-grid.arrange(p1, p2, p3, ncol = 3)</code></pre>
 <p><img src="Build-deploy-stroke-prediction-model-R_files/figure-html/unnamed-chunk-16-1.png" width="1440" /></p>
 </div>
 <div id="incorrect-predictions-of-logistic-regression"
@@ -1182,20 +1438,20 @@ grid.arrange(p1, p2, ncol=2)</code></pre>
 <p><strong>Positive predictive value and negative predictive value of
 logistic regression</strong></p>
 <p>The positive predictive value (PPV) is the probability that an
-individual predicted to have a stroke truly has a stroke, while the
-negative predictive value (NPV) is the probability that an individual
-predicted not to have a stroke truly does not have a stroke. Considering
-our logistic regression model as a diagnostic tool, the probability that
-an individual predicted to have a stroke has a stroke is 16% and the
-probability that an individual predicted not to have a stroke does not
-have a stroke is 98%.</p>
+individual predicted to have stroke truly has stroke, while the negative
+predictive value (NPV) is the probability that an individual predicted
+not to have stroke truly does not have stroke. Considering our logistic
+regression model as a diagnostic tool, the probability that an
+individual predicted to have stroke has stroke is 17% and the
+probability that an individual predicted not to have stroke does not
+have stroke is 98%.</p>
 <pre class="r"><code>cm &lt;- confusionMatrix(lr_result2$pred_class, ground_truth, positive = &quot;1&quot;)
 metrics &lt;- cm$byClass
 ppv &lt;- metrics[3]
 npv &lt;- metrics[4]
 
 cat(&quot;Positive predicted value is&quot;, round(ppv,2), &quot;and negative predicted value is&quot;, round(npv, 2))</code></pre>
-<pre><code>## Positive predicted value is 0.15 and negative predicted value is 0.98</code></pre>
+<pre><code>## Positive predicted value is 0.17 and negative predicted value is 0.98</code></pre>
 </div>
 </div>
 <div id="task-four-deploy-the-prediction-model" class="section level1">

@@ -69,11 +69,9 @@ plot_missingness_distribution <- function(dat, var) {
 
 
 # Evaluates model performance
-evaluate_model_fit <- function(ground_truth, probs) {
+evaluate_model_fit <- function(thresh, ground_truth, probs) {
   
-  t <- best_threshold(ground_truth, probs)
-  
-  pred_class <- factor(ifelse(probs > t$threshold, 1, 0), levels=c(1, 0)) 
+  pred_class <- factor(ifelse(probs > thresh, 1, 0), levels=c(1, 0)) 
   
   sensi <- round(sens_vec(truth = ground_truth, estimate = pred_class), 2)
   
@@ -88,6 +86,28 @@ evaluate_model_fit <- function(ground_truth, probs) {
   list("sensi" = sensi, "speci" = speci, "f1" = f1, "aucroc" = aucroc, "matcc" = matcc, "pred_class"=pred_class)
   
   }
+
+
+best_threshold <- function(ground_truth, probs) {
+  
+  roc_obj <- roc(response = ground_truth, predictor = probs)
+  
+  coords(roc_obj, "best", best.method = "youden")
+  
+}
+
+
+best_mcc_threshold <- function(ground_truth, probs) {
+  thresholds <- seq(0, 1, by = 0.01)
+  
+  results <- purrr::map_dfr(thresholds, function(thresh) {
+    pred <- factor(ifelse(probs > thresh, 1, 0), levels = c(1, 0))
+    mcc <- mcc_vec(ground_truth, pred)
+    tibble(threshold = thresh, mcc = mcc)
+  })
+  
+  results %>% slice_max(mcc, n = 1)
+}
 
 
 
@@ -140,16 +160,6 @@ xgb_tune <- function(params_list, dtrain, nrounds=1000) {
 
 
 
-best_threshold <- function(ground_truth, probs) {
-  
-    roc_obj <- roc(response = ground_truth, predictor = probs)
-    
-    coords(roc_obj, "best", best.method = "youden")
-  
-    }
-
-
-
 
 plot_roc <- function(df, title) {
   
@@ -160,18 +170,19 @@ plot_roc <- function(df, title) {
     coord_equal() +
     theme_minimal()+
     theme(
-      plot.title = element_text(hjust = 0.5, size = 18), 
+      plot.title = element_text(hjust = 0.5, size = 20), 
       panel.spacing = unit(1.2, "lines"),
-      axis.text.x = element_text(size = 18),
-      axis.text.y = element_text(size = 18),
-      axis.title.x = element_text(size = 18),
-      axis.title.y = element_text(size=18)
+      axis.text.x = element_text(size = 20),
+      axis.text.y = element_text(size = 20),
+      axis.title.x = element_text(size = 20),
+      axis.title.y = element_text(size = 20),
+      plot.margin = unit(c(1, 1, 1, 1), "cm")
       ) +
     labs(title = title)
 
 }
 
-
+### to be modified
 plot_wrong_predictions <- function(df, var, what_var) {
   
    tmp <- sym(var)
