@@ -92,7 +92,7 @@ best_threshold <- function(ground_truth, probs) {
   
   roc_obj <- roc(response = ground_truth, predictor = probs)
   
-  coords(roc_obj, "best", best.method = "youden")
+  coords(roc_obj, "best", best.method = c("youden", "closest.topleft"))
   
 }
 

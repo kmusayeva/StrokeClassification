@@ -183,7 +183,7 @@ body {
 the project on building and deploying stroke prediction model in R. It
 contains data exploration, data visualization,
 statistical/epidemiological and predictive modeling analyses of stroke
-dataset. The final report was completed on Tue Apr 15 14:54:12 2025.</p>
+dataset. The final report was completed on Tue Apr 15 15:48:11 2025.</p>
 <p><strong>Data Description:</strong></p>
 <p>According to the World Health Organization (WHO) stroke is the 2nd
 leading cause of death globally, responsible for approximately 11% of
@@ -1236,13 +1236,13 @@ val_truth &lt;- factor(dat_val$stroke, levels = c(1, 0))
 threshold_info &lt;- best_threshold(val_truth, val_probs)</code></pre>
 <pre><code>## Setting levels: control = 1, case = 0</code></pre>
 <pre><code>## Setting direction: controls &gt; cases</code></pre>
-<pre class="r"><code>thr &lt;- threshold_info$threshold
+<pre class="r"><code>lr_thresh1 &lt;- threshold_info$threshold
 
 ###------apply to test set
 
 lr_probs1 &lt;- predict(lr_fit, dat_test, type = &quot;prob&quot;)
 
-lr_result1 &lt;- evaluate_model_fit(thr, ground_truth, lr_probs1$.pred_1)</code></pre>
+lr_result1 &lt;- evaluate_model_fit(lr_thresh1, ground_truth, lr_probs1$.pred_1)</code></pre>
 <p>and train with SMOTE:</p>
 <pre class="r"><code>dat_smote_recipe &lt;- recipe(stroke ~ ., data = dat_train) %&gt;%
   step_impute_knn(all_predictors()) %&gt;%
@@ -1263,12 +1263,12 @@ val_truth &lt;- factor(dat_val$stroke, levels = c(1, 0))
 threshold_info &lt;- best_threshold(val_truth, val_probs)</code></pre>
 <pre><code>## Setting levels: control = 1, case = 0</code></pre>
 <pre><code>## Setting direction: controls &gt; cases</code></pre>
-<pre class="r"><code>thr &lt;- threshold_info$threshold
+<pre class="r"><code>lr_thresh2 &lt;- threshold_info$threshold
 
 ###------apply to test set
 
 lr_probs2 &lt;- predict(lr_fit2, dat_test, type = &quot;prob&quot;)
-lr_result2 &lt;- evaluate_model_fit(thr, ground_truth, lr_probs2$.pred_1)</code></pre>
+lr_result2 &lt;- evaluate_model_fit(lr_thresh2, ground_truth, lr_probs2$.pred_1)</code></pre>
 </div>
 <div id="random-forest" class="section level4">
 <h4><strong>Random Forest</strong></h4>
@@ -1307,13 +1307,13 @@ rf_probs_val &lt;- predict(rf_fit, dat_val, type = &quot;prob&quot;)$.pred_1
 threshold_info &lt;- best_threshold(val_truth, rf_probs_val)</code></pre>
 <pre><code>## Setting levels: control = 1, case = 0</code></pre>
 <pre><code>## Setting direction: controls &gt; cases</code></pre>
-<pre class="r"><code>thresh&lt;- threshold_info$threshold
+<pre class="r"><code>rf_thresh &lt;- threshold_info$threshold
 
 ###--------------Apply to test data
 
 rf_probs_test &lt;- predict(rf_fit, dat_test, type = &quot;prob&quot;)$.pred_1
 
-rf_result &lt;- evaluate_model_fit(thresh, ground_truth, rf_probs_test)</code></pre>
+rf_result &lt;- evaluate_model_fit(rf_thresh, ground_truth, rf_probs_test)</code></pre>
 </div>
 <div id="extreme-gradient-boosting" class="section level4">
 <h4><strong>Extreme Gradient Boosting</strong></h4>
@@ -1349,20 +1349,20 @@ final_wflow &lt;- finalize_workflow(wflow, best_res)
 
 xgb_fit &lt;- final_wflow %&gt;% fit(data = dat_train)
 
-###-------------------Threshold selection
+###------------------- Threshold selection
 
 xgb_probs_val &lt;- predict(xgb_fit, dat_val, type = &quot;prob&quot;)$.pred_1
 
 threshold_info &lt;- best_threshold(val_truth, xgb_probs_val)</code></pre>
 <pre><code>## Setting levels: control = 1, case = 0</code></pre>
 <pre><code>## Setting direction: controls &gt; cases</code></pre>
-<pre class="r"><code>thresh &lt;- threshold_info$threshold
+<pre class="r"><code>xgb_thresh &lt;- threshold_info$threshold
 
-###-----------------Apply to test data
+###----------------- Apply to test data
 
 xgb_probs_test &lt;- predict(xgb_fit, dat_test, type = &quot;prob&quot;)$.pred_1
 
-xgb_result &lt;- evaluate_model_fit(thresh, ground_truth, xgb_probs_test)</code></pre>
+xgb_result &lt;- evaluate_model_fit(xgb_thresh, ground_truth, xgb_probs_test)</code></pre>
 </div>
 </div>
 <div id="performance-comparison-of-models" class="section level3">
@@ -1442,7 +1442,7 @@ individual predicted to have stroke truly has stroke, while the negative
 predictive value (NPV) is the probability that an individual predicted
 not to have stroke truly does not have stroke. Considering our logistic
 regression model as a diagnostic tool, the probability that an
-individual predicted to have stroke has stroke is 16% and the
+individual predicted to have stroke has stroke is 17% and the
 probability that an individual predicted not to have stroke does not
 have stroke is 98%.</p>
 <pre class="r"><code>cm &lt;- confusionMatrix(lr_result2$pred_class, ground_truth, positive = &quot;1&quot;)

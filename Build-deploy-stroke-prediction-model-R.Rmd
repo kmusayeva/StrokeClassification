@@ -743,7 +743,7 @@ We use parsnip package of tidymodels to train logistic regression model, random 
 
 #### **Logistic regression**
 
-```{r}
+```{r, cache=FALSE}
 
 dat_recipe <- recipe(stroke ~ ., data = dat_train) %>% step_impute_knn(all_predictors())
 
@@ -759,19 +759,19 @@ val_probs <- predict(lr_fit, dat_val, type = "prob")$.pred_1
 val_truth <- factor(dat_val$stroke, levels = c(1, 0))
 
 threshold_info <- best_threshold(val_truth, val_probs)
-thr <- threshold_info$threshold
+lr_thresh1 <- threshold_info$threshold
 
 ###------apply to test set
 
 lr_probs1 <- predict(lr_fit, dat_test, type = "prob")
 
-lr_result1 <- evaluate_model_fit(thr, ground_truth, lr_probs1$.pred_1)
+lr_result1 <- evaluate_model_fit(lr_thresh1, ground_truth, lr_probs1$.pred_1)
 
 ```
 
 and train with SMOTE:
 
-```{r}
+```{r, cache=FALSE}
 
 dat_smote_recipe <- recipe(stroke ~ ., data = dat_train) %>%
   step_impute_knn(all_predictors()) %>%
@@ -790,19 +790,19 @@ val_probs <- predict(lr_fit2, dat_val, type = "prob")$.pred_1
 val_truth <- factor(dat_val$stroke, levels = c(1, 0))
 
 threshold_info <- best_threshold(val_truth, val_probs)
-thr <- threshold_info$threshold
+lr_thresh2 <- threshold_info$threshold
 
 ###------apply to test set
 
 lr_probs2 <- predict(lr_fit2, dat_test, type = "prob")
-lr_result2 <- evaluate_model_fit(thr, ground_truth, lr_probs2$.pred_1)
+lr_result2 <- evaluate_model_fit(lr_thresh2, ground_truth, lr_probs2$.pred_1)
 
 ```
 
 
 #### **Random Forest**
 
-```{r}
+```{r, cache=FALSE}
 
 rf_model <- rand_forest(
   mtry = tune(),    # Number of predictors sampled at each split
@@ -838,21 +838,20 @@ rf_probs_val <- predict(rf_fit, dat_val, type = "prob")$.pred_1
 
 threshold_info <- best_threshold(val_truth, rf_probs_val)
 
-thresh<- threshold_info$threshold
+rf_thresh <- threshold_info$threshold
 
 ###--------------Apply to test data
 
 rf_probs_test <- predict(rf_fit, dat_test, type = "prob")$.pred_1
 
-rf_result <- evaluate_model_fit(thresh, ground_truth, rf_probs_test)
+rf_result <- evaluate_model_fit(rf_thresh, ground_truth, rf_probs_test)
 
 ```
 
 
 #### **Extreme Gradient Boosting**
 
-```{r}
-
+```{r, cache=FALSE}
 xgb_spec <- boost_tree(
   tree_depth = tune(),         # Maximum tree depth
   learn_rate = tune(),         # Learning rate (eta)
@@ -885,19 +884,19 @@ final_wflow <- finalize_workflow(wflow, best_res)
 
 xgb_fit <- final_wflow %>% fit(data = dat_train)
 
-###-------------------Threshold selection
+###------------------- Threshold selection
 
 xgb_probs_val <- predict(xgb_fit, dat_val, type = "prob")$.pred_1
 
 threshold_info <- best_threshold(val_truth, xgb_probs_val)
 
-thresh <- threshold_info$threshold
+xgb_thresh <- threshold_info$threshold
 
-###-----------------Apply to test data
+###----------------- Apply to test data
 
 xgb_probs_test <- predict(xgb_fit, dat_test, type = "prob")$.pred_1
 
-xgb_result <- evaluate_model_fit(thresh, ground_truth, xgb_probs_test)
+xgb_result <- evaluate_model_fit(xgb_thresh, ground_truth, xgb_probs_test)
 
 ```
 
@@ -935,7 +934,6 @@ ggplot(results_long, aes(x = Metric, y = Value, fill = Model)) +
 
 ```
 
-
 ```{r echo=FALSE, fig.height=10, fig.width=25, warning=FALSE}
 
 p1 <- plot_roc(data.frame(ground_truth, probs=lr_probs2$.pred_1), "Logistic Regression")
@@ -950,7 +948,7 @@ grid.arrange(p1, p2, p3, ncol = 3)
 
 From the confusion matrix, we see that a lot of individuals are predicted as the stroke case, since we chose lower cut-off threshold from the ROC curve. Logistic regression has smaller number of false positives.
 
-```{r echo=FALSE, fig.height=5, fig.width=15, warning=FALSE}
+```{r echo=FALSE, fig.height=7, fig.width=15, warning=FALSE}
 
 p1 <- plot_confusion_matrix(ground_truth, lr_result2$pred_class, round(lr_result2$matcc, 2), "Logistic regression")
 
@@ -993,7 +991,7 @@ grid.arrange(p1, p2, ncol=2)
 
 **Positive predictive value and negative predictive value of logistic regression**
 
-The positive predictive value (PPV) is the probability that an individual predicted to have stroke truly has stroke, while the negative predictive value (NPV) is the probability that an individual predicted not to have stroke truly does not have stroke. Considering our logistic regression model as a diagnostic tool, the probability that an individual predicted to have stroke has stroke is 16% and the probability that an individual predicted not to have stroke does not have stroke is 98%.
+The positive predictive value (PPV) is the probability that an individual predicted to have stroke truly has stroke, while the negative predictive value (NPV) is the probability that an individual predicted not to have stroke truly does not have stroke. Considering our logistic regression model as a diagnostic tool, the probability that an individual predicted to have stroke has stroke is 17% and the probability that an individual predicted not to have stroke does not have stroke is 98%.
 
 ```{r}
 
