@@ -17,7 +17,7 @@ Considering logistic regression model as a diagnostic tool, the probability that
 
 ### View the project:
 
-* Rmarkdown document can be viewed [here](https://kmusayeva.github.io/StrokeClassification/).
+* Rmarkdown report of detailed analysis can be viewed [here](https://kmusayeva.github.io/StrokeClassification/).
 
 * Click [here](https://kmusayeva.shinyapps.io/strokeclassification/) to try the interactive shiny app.
 
