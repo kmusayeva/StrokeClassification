@@ -9,7 +9,7 @@ which increases sensitivity of the learning algorithm or diagnostic tool, at the
 Then, it reduces to finding some trade-off between false negatives and false-positives (i.e., which is worse, incorrectly predicting a no-stroke individual as a stroke case, or stroke individual as no-stroke case?).
 
 ### Predictive Modeling
-Logistic regression, random forest and extreme gradient boosting are used for predictive modeling. All perform bad accroding to Matthiew's correlation coefficient (MCC).
+Logistic regression, random forest and extreme gradient boosting are used for predictive modeling. All perform weak according to Matthiew's correlation coefficient (MCC).
 But logistic regression is superior according to AUC, F1, MCC measures, and specifity.
 
 Considering logistic regression model as a diagnostic tool, the probability that an individual predicted to have stroke actually has stroke is 17% and the probability that an individual predicted not to have stroke does not have stroke is 98%.
