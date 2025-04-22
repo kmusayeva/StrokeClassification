@@ -6,7 +6,7 @@ This problem is usually handled by
   - choosing a cutoff threshold based on the ROC curve analysis using validation data set
 
 which increases sensitivity of the learning algorithm or diagnostic tool, at the cost of generating false positives.
-Then, it reduces to finding some trade-off between false negatives and false-positives (i.e., incorrectly predicting a non-stroke individual as a stroke case, or vice versa?)
+Then, it reduces to finding some trade-off between false negatives and false-positives (i.e., which is worse, incorrectly predicting a non-stroke individual as a stroke case, or stroke individual as non-stoke case?).
 
 ### Predictive Modeling
 Logistic regression, random forest and extreme gradient boosting are used for predictive modeling. All perform bad accroding to Matthiew's correlation coefficient (MCC).
