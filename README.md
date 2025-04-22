@@ -9,7 +9,7 @@ which increases sensitivity of the learning algorithm or diagnostic tool, at the
 Then, it reduces to finding some trade-off between false negatives and false-positives.
 
 
-### To View the Project:
+### View the project:
 
 * Rmarkdown document can be viewed [here](https://kmusayeva.github.io/StrokeClassification/).
 
