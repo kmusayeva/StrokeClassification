@@ -19,7 +19,7 @@ Considering logistic regression model as a diagnostic tool, the probability that
 
 * Rmarkdown report of detailed analysis can be viewed [here](https://kmusayeva.github.io/StrokeClassification/).
 
-* Click [here](https://kmusayeva.shinyapps.io/strokeclassification/) to try the interactive shiny app.
+* Stroke risk predictor can be tried [here](https://kmusayeva.shinyapps.io/strokeclassification/) via an interactive shiny app.
 
 
 
