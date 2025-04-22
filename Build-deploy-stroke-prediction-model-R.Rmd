@@ -5,7 +5,8 @@ date: "`r Sys.Date()`"
 output:
   html_document:
     self_contained: false
-  pdf_document: default
+    toc: true
+    toc_depth: 4
 ---
 
 <style>
@@ -25,9 +26,9 @@ According to the World Health Organization (WHO) stroke is the 2nd leading cause
 This data set is used to predict whether a patient is likely to get stroke based on the input parameters like gender, age, body mass index, various diseases, and smoking status. Each row in the data provides relevant information about the patient.
 
 
-## Data preprocessing and analysis
+# Data Preprocessing and Analysis
 
-### Install and load packages
+**Install and load packages**
 
 ```{r message=FALSE, warning=FALSE}
 ### we use pacman to install and load the required packages
@@ -39,8 +40,7 @@ source("utils.R")
 ```
 
 
-
-### Load the data
+## Load the Data
 
 Read the data and check its dimensions:
 
@@ -59,6 +59,7 @@ To this end, we can also use str function, it outputs types of column as well as
 ```{r}
 str(dat)
 ```
+
 Most of the variables are categorical. We convert them into factor.
 
 ```{r warning=FALSE}
@@ -84,7 +85,7 @@ kable(head(dat), "html") %>%
 
 ```
 
-### **Analysis of Missing Values**
+## Analysis of Missing Values
 
 To visualize the distribution of missing values we use the naniar package. 
 
@@ -108,7 +109,9 @@ grid.arrange(p1, p2, ncol = 2)
 
 
 
-### **Visualization**
+## Visualization
+
+### Categorical Variables
 
 The following plot illustrates the distribution of categorical variables. 
 
@@ -150,7 +153,7 @@ ggplot(long_dat, aes(x = value, y = after_stat(prop), fill=variable)) +
 
 ```
 
-**The prevalence of stroke cases across all categorical variables.**
+#### Prevalence of Stroke
 
 We see that both females and males are equally affected by this medical condition.  There are more stroke cases among individuals with hypertension, and heart disease. More formerly-smoked individuals have stroke than the rest, however, there are a lot of individuals with the unknown smoking status, which makes this analysis biased. Age may be a confounding variable here. For instance, the majority of formerly-smoked individuals, or ever-married individuals are relatively older individuals (above the age of 40).
 
@@ -229,7 +232,7 @@ ggplot(cramerV_tidy, aes(Var1, Var2, fill = value)) +
 ```
 
 
-#### **Distribution of Continuous Variables**
+### Continuous Variables
 
 What about the continuous variables: age, average glucose level, and body mass index?
 
@@ -501,11 +504,11 @@ ggplot(stroke_hypert_heartd, aes(x = hyp_hd, y = age, fill = stroke)) +
 
 
 
-### **Epidemiological Analysis**
+## Epidemiological Analysis
 
 In this section, we do some statistical analysis of association between variables. 
 
-#### **Odds Ratio**
+### (Unadjusted) Odds Ratio
 
 To compute the odds ratio we use **epitools package**. 
 The outcome of interest is stroke, and the exposures are: hypertension, heart disease, average glucose level, age and gender.
@@ -610,7 +613,7 @@ oddsratio(tbl_gender)
 ``` 
 
 
-#### **Attributable Risk**
+### Attributable Risk
 
 Since we are dealing with a cross-sectional data and risk is a time-related concept, in what follows we talk about the prevalence of disease.
 What percentage of the stroke cases in the hypertension individuals can be attributed to hypertension? To answer this question we need to compute attributable risk percent: **70% of strokes in hypertension individuals could be attributed to hypertension.**
@@ -666,7 +669,7 @@ cat("Population attributable risk percent due to hypertension is", par, "and pop
 ```
 
 
-#### **Adjusted Odds Ratio**
+### Adjusted Odds Ratio
 
 Logistic regression models the log odds of stroke as a linear combination of variables. It allows us to see the effect of each covariate on the odds of stroke while adjusting for all the other covariates. The result below shows that the age, average glucose level, and hypertension are significant covariates for stroke, but heart disease is not (because the age is the confounding factor), after adjusting for other variables. In other words, **older individuals, individuals with hypertension, and individuals with higher glucose levels are at increased risk of stroke.**
 
@@ -691,9 +694,9 @@ exp(coeffs_sign)
 ```
 
 
-# Task Three: Evaluate and select prediction models
+# Predictive Modeling
 
-### **Evaluation Measures**
+## Evaluation Measures
 
 This is a problem with high class imbalance: only around 5 percent of observations are stroke cases. Thus it is important to choose relevant evaluation measures. Without any learning, without even considering any input variables, predicting no stroke would achieve a very high accuracy result. Thus we concentrate on **sensitivity** and **specificity** first. **Sensitivity measures the proportion of individuals correctly identified as stroke cases among those who actually have stroke, and specificity measures the proportion of individuals correctly identified as healthy among those who are actually healthy.** These measures take values between O and 1. Now, if all individuals are predicted as non-stroke ones, then the specificity will be 1 since there is no false positives. However, sensitivity in this case will be 0, since 0 stroke case, i.e., 0 true positive is identified.
 
@@ -707,11 +710,11 @@ Finally, we consider **Matthews correlation coefficient. The value of this metri
 Now, since we are dealing with the class-imbalance problem, we can choose cut-off threshold values below the standard 0.5 level. This will output different values for sensitivity, specificity, F1-measure and Matthews coefficient. Our strategy is based on the Youden's index, i.e., the threshold that maximizes sensitivity + specificity - 1.
 
 
-### **Missing Values, Data Splitting**
+## Missing Values, Data Splitting
 
 We  can impute the missing values using the k-nearest neighbour method. It means that the individuals having similar characteristics will have similar body mass index. But it is questionable from precision medicine point of view. We can as well remove these individuals from the data set on the basis of biological differences between individuals even with very similar characteristics. 
 
-We first split the data into the 75%/25% training and test sets using rsample package of tidymodels framework. **We do stratification based on the stroke variable to ensure that the proportion of stroke cases is similar across these splits.** 
+We first split the data into the 70% training, 15% validation and 15% test data using rsample package of tidymodels framework. We need validations set for threshold selection. **We do stratification based on the stroke variable to ensure that the proportion of stroke cases is similar across these splits.** 
 In what follow, we use set.seed to ensure reproducibility.
 
 ```{r data-split}
@@ -733,7 +736,7 @@ ground_truth <- factor(dat_test$stroke, levels = c(1, 0))
 
 
 
-### **Predictive Modeling**
+## Models  {.tabset}
 
 We use logistic regression, also models of higher capacity, capable of learning non-linear decision boundaries, such as random forest and an improved version of the gradient boosting method, extreme gradient boosting. The latter models are particularly suitable for data with many categorical variables.
 
@@ -741,7 +744,7 @@ We train logistic regression with and without SMOTE, and the remaining models wi
 
 We use parsnip package of tidymodels to train logistic regression model, random forest and xgboost and we perform grid search for hyperparameter tuning.
 
-#### **Logistic regression**
+### Logistic regression
 
 ```{r, cache=FALSE}
 
@@ -753,16 +756,14 @@ lr_workflow <- workflow() %>% add_model(lr_model) %>% add_recipe(dat_recipe)
 
 lr_fit <- fit(lr_workflow, data = dat_train)
 
-###------threshold selection
-
+#threshold selection
 val_probs <- predict(lr_fit, dat_val, type = "prob")$.pred_1
-val_truth <- factor(dat_val$stroke, levels = c(1, 0))
+val_truth <- as.factor(dat_val$stroke)
 
 threshold_info <- best_threshold(val_truth, val_probs)
 lr_thresh1 <- threshold_info$threshold
 
-###------apply to test set
-
+#apply to test set
 lr_probs1 <- predict(lr_fit, dat_test, type = "prob")
 
 lr_result1 <- evaluate_model_fit(lr_thresh1, ground_truth, lr_probs1$.pred_1)
@@ -784,15 +785,13 @@ lr_workflow2 <- workflow() %>% add_model(lr_model2) %>% add_recipe(dat_smote_rec
 
 lr_fit2 <- fit(lr_workflow2, data = dat_train)
 
-###------threshold selection
-
+#threshold selection
 val_probs <- predict(lr_fit2, dat_val, type = "prob")$.pred_1
-val_truth <- factor(dat_val$stroke, levels = c(1, 0))
 
 threshold_info <- best_threshold(val_truth, val_probs)
 lr_thresh2 <- threshold_info$threshold
 
-###------apply to test set
+#apply to test set
 
 lr_probs2 <- predict(lr_fit2, dat_test, type = "prob")
 lr_result2 <- evaluate_model_fit(lr_thresh2, ground_truth, lr_probs2$.pred_1)
@@ -800,7 +799,7 @@ lr_result2 <- evaluate_model_fit(lr_thresh2, ground_truth, lr_probs2$.pred_1)
 ```
 
 
-#### **Random Forest**
+### Random Forest
 
 ```{r, cache=FALSE}
 
@@ -832,16 +831,14 @@ rf_workflow_final <- rf_workflow %>% finalize_workflow(param_final)
 
 rf_fit <- rf_workflow_final %>% fit(data = dat_train)
 
-###-------------Threshold selection on validation set
-
+#threshold selection
 rf_probs_val <- predict(rf_fit, dat_val, type = "prob")$.pred_1
 
 threshold_info <- best_threshold(val_truth, rf_probs_val)
 
 rf_thresh <- threshold_info$threshold
 
-###--------------Apply to test data
-
+#apply to test data
 rf_probs_test <- predict(rf_fit, dat_test, type = "prob")$.pred_1
 
 rf_result <- evaluate_model_fit(rf_thresh, ground_truth, rf_probs_test)
@@ -849,7 +846,7 @@ rf_result <- evaluate_model_fit(rf_thresh, ground_truth, rf_probs_test)
 ```
 
 
-#### **Extreme Gradient Boosting**
+### Extreme Gradient Boosting
 
 ```{r, cache=FALSE}
 xgb_spec <- boost_tree(
@@ -859,7 +856,7 @@ xgb_spec <- boost_tree(
 
 wflow <- workflow() %>% add_recipe(dat_smote_recipe) %>% add_model(xgb_spec)
 
-# Here we use grid_regular() from the dials package to create a regular grid.
+# we use grid_regular() from the dials package to create a regular grid
 grid_vals <- grid_regular(
   tree_depth(range = c(3, 9)),
   learn_rate(range = c(0.01, 0.3)),
@@ -884,7 +881,7 @@ final_wflow <- finalize_workflow(wflow, best_res)
 
 xgb_fit <- final_wflow %>% fit(data = dat_train)
 
-###------------------- Threshold selection
+#threshold selection
 
 xgb_probs_val <- predict(xgb_fit, dat_val, type = "prob")$.pred_1
 
@@ -892,7 +889,7 @@ threshold_info <- best_threshold(val_truth, xgb_probs_val)
 
 xgb_thresh <- threshold_info$threshold
 
-###----------------- Apply to test data
+#apply to test data
 
 xgb_probs_test <- predict(xgb_fit, dat_test, type = "prob")$.pred_1
 
@@ -902,7 +899,7 @@ xgb_result <- evaluate_model_fit(xgb_thresh, ground_truth, xgb_probs_test)
 
 
 
-### **Performance Comparison of Models**
+## Performance Comparison of Models
 
 **According to Matthiews correlation coefficient, all methods perform weakly (better than random)**. Their performances are comparable, but logistic regression with smote stands out in terms of AUC, F1-measure, Matthews coefficient and specificity. We see that generating synthetic examples overall improved the predictive performance of logistic regression model at the cost of sensitivity. 
 
@@ -948,7 +945,7 @@ grid.arrange(p1, p2, p3, ncol = 3)
 
 From the confusion matrix, we see that a lot of individuals are predicted as the stroke case, since we chose lower cut-off threshold from the ROC curve. Logistic regression has smaller number of false positives.
 
-```{r echo=FALSE, fig.height=7, fig.width=15, warning=FALSE}
+```{r echo=FALSE, fig.height=5, fig.width=15, warning=FALSE}
 
 p1 <- plot_confusion_matrix(ground_truth, lr_result2$pred_class, round(lr_result2$matcc, 2), "Logistic regression")
 
@@ -962,7 +959,7 @@ grid.arrange(p1, p2, p3, ncol = 3)
 ```
 
 
-### **Incorrect predictions of logistic regression**
+### Incorrect Predictions of Logistic Regression
 
 Now let us look at the distribution of incorrect predictions, in particular false positives, for logistic regression (trained with smote). We consider important predictors of stroke such as age and average glucose level. Since the age is a very important risk factor for stroke, as expected, there are many false positives for older age. There are many false positives across all values of average glucose: this is expected since the class conditional distributions of this variable, i.e., the distributions of average glucose level conditioned on the stroke variable, overlap. 
 
@@ -1006,9 +1003,9 @@ cat("Positive predicted value is", round(ppv,2), "and negative predicted value i
 
 
 
-# Task Four: Deploy the prediction model
+# Deploy the Model
 
-We train logistic regression model on the entire dataset, where we impute the missing values of BMI and generate synthetic examples of the rare class. We save the trained model.
+We train logistic regression model on the entire dataset, where we impute the missing values of BMI and generate synthetic examples of the rare class. We save the trained model and deploy it via shiny app.
 
 ```{r}
 
@@ -1039,7 +1036,7 @@ knitr::include_graphics("shiny.png")
 
 
 
-# Task Five: Findings and Conclusions
+# Findings and Conclusions
 
 The prevalence of stroke cases is ~5%, making this a highly imbalanced dataset from a classification perspective. Data visualization revealed considerable overlap between the class-conditional distributions of important variables such as body mass index, average glucose level, heart disease, and age. This indicates that no single covariate is clearly discriminative for stroke classification. From precision medicine point of view, incorporating family history, ethnic origin, other environmental factors such as geographic location, socioeconomic status, as well as genomic profile of individuals would improve the classification of stroke cases. Importantly, since this is a cross-sectional data, although obese individuals with hypertension is a non-stroke case in the dataset, they are at higher risk of stroke as they age.
 
